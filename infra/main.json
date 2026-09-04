@@ -5,8 +5,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.36.177.2456",
-      "templateHash": "9987629255302911321"
+      "version": "0.42.1.51946",
+      "templateHash": "10917328494587606481"
     },
     "name": "RFP intake: SharePoint -> Azure OpenAI -> Teams (.NET)",
     "description": "Connector Namespace trigger sample that reads an RFP from SharePoint, extracts requirements with Azure OpenAI, and posts an Adaptive Card to Teams. System-key auth on the callback URL (no built-in auth)."
@@ -61,7 +61,6 @@
     },
     "sharepointLibraryName": {
       "type": "string",
-      "defaultValue": "Documents",
       "metadata": {
         "description": "SharePoint document library name to monitor for new RFPs (e.g., \"Documents\")."
       }
@@ -87,7 +86,7 @@
     },
     "openAiDeploymentName": {
       "type": "string",
-      "defaultValue": "gpt-4o",
+      "defaultValue": "gpt-5.4-mini",
       "metadata": {
         "description": "Azure OpenAI chat model deployment name."
       }
@@ -263,7 +262,7 @@
     },
     "logAnalytics": {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "[format('{0}-loganalytics', uniqueString(deployment().name, parameters('location')))]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -3369,7 +3368,7 @@
     },
     "funcUserAssignedIdentity": {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "funcUserAssignedIdentity",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -3874,7 +3873,7 @@
     },
     "monitoring": {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "[format('{0}-appinsights', uniqueString(deployment().name, parameters('location')))]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -4641,7 +4640,7 @@
     },
     "storageAccount": {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "[variables('storageAccountName')]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -12840,7 +12839,7 @@
     },
     "functionAppPlan": {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "[variables('functionAppPlanName')]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -13553,7 +13552,7 @@
     },
     "connectorNamespace": {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "[variables('connectorNamespaceName')]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -13590,8 +13589,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "4471800152874297621"
+              "version": "0.42.1.51946",
+              "templateHash": "6359905463697359356"
             }
           },
           "parameters": {
@@ -13822,7 +13821,7 @@
     },
     "openAi": {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "[variables('openAiName')]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -13856,8 +13855,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "4226229229602150744"
+              "version": "0.42.1.51946",
+              "templateHash": "7824531619210589705"
             }
           },
           "parameters": {
@@ -13876,21 +13875,21 @@
             },
             "deploymentName": {
               "type": "string",
-              "defaultValue": "gpt-4o",
+              "defaultValue": "gpt-5.4-mini",
               "metadata": {
-                "description": "Name of the chat model deployment (e.g. gpt-4o)."
+                "description": "Name of the chat model deployment (e.g. gpt-5.4-mini)."
               }
             },
             "modelName": {
               "type": "string",
-              "defaultValue": "gpt-4o",
+              "defaultValue": "gpt-5.4-mini",
               "metadata": {
                 "description": "Model name to deploy."
               }
             },
             "modelVersion": {
               "type": "string",
-              "defaultValue": "2024-08-06",
+              "defaultValue": "2026-03-17",
               "metadata": {
                 "description": "Model version to deploy."
               }
@@ -13958,7 +13957,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', parameters('name'))]",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]",
               "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), parameters('functionAppPrincipalId'), variables('openAiUserRoleId'))]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('openAiUserRoleId'))]",
@@ -13973,7 +13972,7 @@
               "condition": "[not(empty(parameters('userPrincipalId')))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', parameters('name'))]",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]",
               "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), parameters('userPrincipalId'), variables('openAiUserRoleId'))]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('openAiUserRoleId'))]",
@@ -14010,7 +14009,7 @@
     },
     "functionApp": {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "[variables('functionAppName')]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {

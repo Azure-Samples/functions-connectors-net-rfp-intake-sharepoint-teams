@@ -46,7 +46,7 @@ param teamsTeamId string
 param teamsChannelId string
 
 @description('Azure OpenAI chat model deployment name.')
-param openAiDeploymentName string = 'gpt-4o'
+param openAiDeploymentName string = 'gpt-5.4-mini'
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))

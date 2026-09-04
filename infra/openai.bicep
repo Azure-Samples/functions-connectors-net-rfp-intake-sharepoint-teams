@@ -3,14 +3,14 @@ param name string
 param location string
 param tags object = {}
 
-@description('Name of the chat model deployment (e.g. gpt-4o).')
-param deploymentName string = 'gpt-4o'
+@description('Name of the chat model deployment (e.g. gpt-5.4-mini).')
+param deploymentName string = 'gpt-5.4-mini'
 
 @description('Model name to deploy.')
-param modelName string = 'gpt-4o'
+param modelName string = 'gpt-5.4-mini'
 
 @description('Model version to deploy.')
-param modelVersion string = '2024-11-20'
+param modelVersion string = '2026-03-17'
 
 @description('Capacity (TPM in thousands) for the deployment.')
 param capacity int = 20

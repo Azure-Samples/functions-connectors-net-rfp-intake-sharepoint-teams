@@ -30,7 +30,7 @@ flowchart LR
 
     B -->|"Action: Get file content<br/>GetFileContentAsync(site, fileId) → byte[]"| SP
     SP -->|"RFP text"| B
-    B -->|"prompt with RFP text"| C["Azure OpenAI (GPT-4o)<br/>chat completion → JSON"]
+    B -->|"prompt with RFP text"| C["Azure OpenAI (GPT-5.4 mini)<br/>chat completion → JSON"]
     C -->|"{ customer, requiredCapabilities[], recommendedSMEs[] }"| B
     B -->|"Action: Post card in a chat or channel<br/>PostCardToConversationAsync — non-deprecated"| TM
     TM --> E["💬 Teams channel — Adaptive Card<br/>New RFP received · Contoso Ltd.<br/>Capabilities: Azure AI, Data Platform, Identity<br/>Recommended SMEs: AI Specialist, Security Architect"]
@@ -51,7 +51,7 @@ flowchart LR
         tmconn@{ icon: "mdi:transit-connection-variant", form: "square", label: "Teams connection", pos: "b" }
     end
 
-    oai@{ icon: "mdi:robot-happy", form: "square", label: "Azure OpenAI (GPT-4o)", pos: "b" }
+    oai@{ icon: "mdi:robot-happy", form: "square", label: "Azure OpenAI (GPT-5.4 mini)", pos: "b" }
     teams@{ icon: "mdi:microsoft-teams", form: "square", label: "Teams channel", pos: "b" }
 
     sp --> spconn
@@ -225,7 +225,7 @@ already authenticated are skipped.
 | 1 | **RFP arrives** | A file is uploaded to the monitored SharePoint document library. |
 | 2 | **Trigger** | The Connector Namespace polls the SharePoint **"When a file is created"** trigger (`GetOnNewFileItems`) and calls the function's callback (`OnNewFile`). The trigger returns **properties** only, so the content needs to be fetched separately. |
 | 3 | **Fetch content** | The function calls the SharePoint **"Get file content"** action (`SharePointOnlineClient.GetFileContentAsync`) using the file identifier from the trigger payload. |
-| 4 | **Extract requirements** | The RFP text is sent to **Azure OpenAI** (GPT-4o), which returns structured JSON: `customer`, `requiredCapabilities`, `recommendedSMEs`. |
+| 4 | **Extract requirements** | The RFP text is sent to **Azure OpenAI** (GPT-5.4 mini), which returns structured JSON: `customer`, `requiredCapabilities`, `recommendedSMEs`. |
 | 5 | **Notify** | The function builds an Adaptive Card and posts it to a Teams channel with the **"Post card in a chat or channel"** action (`TeamsClient.PostCardToConversationAsync`). |
 
 ## Clean up
@@ -269,7 +269,7 @@ connectors-integrated-demo/
 └── infra/
     ├── main.bicep           # Function app, storage, App Insights, namespace, OpenAI, app settings
     ├── connectorNamespace.bicep  # SharePoint + Teams connections + MI access policies
-    ├── openai.bicep         # Azure OpenAI account + GPT-4o deployment + role assignment
+    ├── openai.bicep         # Azure OpenAI account + GPT-5.4 mini deployment + role assignment
     ├── main.parameters.json
     └── scripts/
         ├── authorize-connections.ps1 # Windows: OAuth-authorizes both connections
