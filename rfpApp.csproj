@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>RfpApp</RootNamespace>
-    <UserSecretsId>7d74b4cf-47b3-40cf-9c12-01d84e111adb</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
