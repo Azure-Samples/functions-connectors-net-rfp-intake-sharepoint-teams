@@ -163,7 +163,7 @@ source**, then select **Allow access**. Connections that are already authenticat
    Function host:
 
    ```pwsh
-   ./infra/scripts/configure-trigger.ps1 `
+   pwsh ./infra/scripts/configure-trigger.ps1 `
      -Target Local `
      -CallbackBaseUrl "https://<id>-7071.uks1.devtunnels.ms"
    ```
