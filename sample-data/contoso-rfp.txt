@@ -1,21 +1,21 @@
 REQUEST FOR PROPOSAL (RFP)
 ==========================
 
-RFP Reference:   BLUECLOUD-2026-NIMBUS-007
+RFP Reference:   CONTOSO-2026-NIMBUS-007
 Issue Date:      2026-06-22
 Response Due:    2026-07-13 (3 weeks, or "two sprints and a vibe check")
-Customer:        Blue Cloud Inc.  (we put the "Azure" in "azure skies")
+Customer:        Contoso Ltd.
 Industry:        Definitely-Not-A-Hyperscaler Cloud Widgets
 Prepared For:    Solution Provider Pre-Sales Team
-CEO:             Sky Bluebottle  ("Hit refresh... then hit it again")
-Primary Contact: skyblue@bluecloud.com
+CEO:             Alex Wilber  ("Hit refresh... then hit it again")
+Primary Contact: alexw@contoso.com
 
 ------------------------------------------------------------
 1. COMPANY BACKGROUND
 ------------------------------------------------------------
-Blue Cloud Inc. is a global manufacturer of artisanal clouds, free-range bits,
+Contoso Ltd. is a global manufacturer of artisanal clouds, free-range bits,
 and ethically sourced 1s and 0s. Under the visionary leadership of CEO
-Sky Bluebottle, our motto is "Empower every person and every spreadsheet on the
+Alex Wilber, our motto is "Empower every person and every spreadsheet on the
 planet to achieve slightly more." Our support team fields roughly 12,000 tickets
 a month, most of which begin with "have you tried turning it off and on again."
 
@@ -65,14 +65,14 @@ ship value faster than our interns can deploy to prod on a Friday afternoon.
 ------------------------------------------------------------
 - Hosting: A Definitely Real Cloud only. Preferred regions: West US 2, West Europe.
 - Availability: 99.9% ("three nines, like our CEO's enthusiasm").
-- Compliance: Must satisfy Blue Cloud's security and data-residency policies.
+- Compliance: Must satisfy Contoso's security and data-residency policies.
 - Architecture: Serverless-first, because pets are for homes and cattle are for clouds.
 - Cost: Provide a monthly run-cost estimate before the CFO provides a heart attack.
 
 ------------------------------------------------------------
 5. KEY STAKEHOLDERS
 ------------------------------------------------------------
-- Sky Bluebottle, Chief Executive Officer (business sponsor & chief hype officer)
+- Alex Wilber, Chief Executive Officer (business sponsor & chief hype officer)
 - Karen Cumulus, VP of Customer Service
 - Bit Vaderson, Director of Data & Analytics ("the data must flow")
 - Ward N. Firewall, Chief Information Security Officer (CISO)
@@ -104,6 +104,6 @@ ship value faster than our interns can deploy to prod on a Friday afternoon.
 - Total cost of ownership (15%)
 - Timeline, delivery confidence, and quality of dad jokes (5%)
 
-Please direct all clarifying questions to the Blue Cloud procurement team.
-Thank you for your interest in partnering with Blue Cloud Inc. -- where the
+Please direct all clarifying questions to the Contoso procurement team.
+Thank you for your interest in partnering with Contoso Ltd. -- where the
 forecast is always partly cloudy with a 100% chance of uptime.

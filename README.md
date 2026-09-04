@@ -33,7 +33,7 @@ flowchart LR
     B -->|"prompt with RFP text"| C["Azure OpenAI (GPT-4o)<br/>chat completion → JSON"]
     C -->|"{ customer, requiredCapabilities[], recommendedSMEs[] }"| B
     B -->|"Action: Post card in a chat or channel<br/>PostCardToConversationAsync — non-deprecated"| TM
-    TM --> E["💬 Teams channel — Adaptive Card<br/>New RFP received · Blue Cloud Inc.<br/>Capabilities: Azure AI, Data Platform, Identity<br/>Recommended SMEs: AI Specialist, Security Architect"]
+    TM --> E["💬 Teams channel — Adaptive Card<br/>New RFP received · Contoso Ltd.<br/>Capabilities: Azure AI, Data Platform, Identity<br/>Recommended SMEs: AI Specialist, Security Architect"]
 ```
 
 ### Architecture
@@ -174,14 +174,14 @@ source**, then select **Allow access**. Connections that are already authenticat
 
 ## Upload file
 
-1. Upload `sample-data/bluecloud-rfp.txt` to the monitored SharePoint library.
+1. Upload `sample-data/contoso-rfp.txt` to the monitored SharePoint library.
 2. The function runs within the trigger's polling interval (~5 min).
 3. A **"New RFP received"** Adaptive Card appears in your Teams channel:
 
    ```
    📄 New RFP received
-   Customer:      Blue Cloud Inc.
-   Source file:   bluecloud-rfp.txt
+   Customer:      Contoso Ltd.
+   Source file:   contoso-rfp.txt
 
    Required capabilities
    - Azure AI
@@ -253,7 +253,7 @@ connectors-integrated-demo/
 ├── local.settings.json.sample
 ├── Architecture.md          # deep-dive platform architecture (connectors × functions)
 ├── sample-data/
-│   └── bluecloud-rfp.txt    # Text-style sample RFP to upload for testing
+│   └── contoso-rfp.txt      # Text-style sample RFP to upload for testing
 └── infra/
     ├── main.bicep           # Function app, storage, App Insights, namespace, OpenAI, app settings
     ├── connectorNamespace.bicep  # SharePoint + Teams connections + MI access policies
