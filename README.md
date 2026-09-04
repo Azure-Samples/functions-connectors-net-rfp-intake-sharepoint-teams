@@ -101,7 +101,7 @@ flowchart LR
     | Prompt | Example value | Explanation |
     |---|---|---|
     | Azure Subscription| `00000000-0000-0000-0000-000000000000`| Resources will be provisioned in this subscription. |
-    | Location | `East US 2` | The region where resources will be deployed in. |
+    | Location | `West Central US` | The region where resources will be deployed in. |
     | `SHAREPOINT_SITE_URL` | `https://contoso.sharepoint.com/sites/RFPs` | URL of the SharePoint site containing the document library to monitor. |
     | `SHAREPOINT_LIBRARY_NAME` | `Documents` | Name of the SharePoint document library containing the RFP files. This is not a folder name. |
     | `TEAMS_TEAM_ID` | `00000000-0000-0000-0000-000000000000` | Microsoft 365 group ID of the Teams team that receives the summary card. |
@@ -151,7 +151,7 @@ source**, then select **Allow access**. Connections that are already authenticat
    > **Note:** Always use `--enableAuth` when exposing your app through a dev tunnel. Without it,
    > your function endpoint is completely unauthenticated on the public internet.
 
-4. In VS Code, open the integrated terminal (**Cmd+Shift+\`** or
+4. In VS Code, open the integrated terminal (**Control+Shift+\`** or
    **Ctrl+Shift+\`**). Open the **Ports** view in the Panel region, then select
    **Forward a Port**.
 5. Enter port `7071`. Port forwarding starts, and the **Ports** view displays a
