@@ -65,11 +65,12 @@ flowchart LR
 
 - [Azure Developer CLI (`azd`)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
 - [Azure CLI (`az`)](https://learn.microsoft.com/cli/azure/install-azure-cli) ≥ 2.75.0
+- [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=macos%2Cisolated-process%2Cnode-v4%2Cpython-v2%2Chttp-trigger%2Ccontainer-apps&pivots=programming-language-csharp#install-the-azure-functions-core-tools)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [`connector-namespace` Azure CLI extension](https://github.com/Azure/Connectors/tree/main/public-preview/connector-namespace-cli)
 - [Visual Studio Code](https://code.visualstudio.com/)
 - A SharePoint site + document library to receive RFPs.
-- A Microsoft Teams **team** and **public channel** to post to. Posting to **private channels is not supported**. The Teams **Workflows** app must be allowed in the [Teams admin center](https://admin.teams.microsoft.com/policies/manage-apps) (required by the card-posting action).
+- A Microsoft Teams **team** and **public channel** to post to. Posting to **private channels is not supported**. The Teams **Workflows** app must be allowed in the [Teams admin center](https://admin.teams.microsoft.com/policies/manage-apps) (required by the card-posting action). See the [Microsoft Teams connector documentation](https://learn.microsoft.com/connectors/teams/?tabs=text1%2Cdotnet) for details.
 
 ## Provision resources
 1. Clone the repo:
