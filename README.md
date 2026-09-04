@@ -67,6 +67,7 @@ flowchart LR
 - [Azure CLI (`az`)](https://learn.microsoft.com/cli/azure/install-azure-cli) ≥ 2.75.0
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=macos%2Cisolated-process%2Cnode-v4%2Cpython-v2%2Chttp-trigger%2Ccontainer-apps&pivots=programming-language-csharp#install-the-azure-functions-core-tools)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- [`jq`](https://jqlang.org/download/) (macOS and Linux only)
 - [`connector-namespace` Azure CLI extension](https://github.com/Azure/Connectors/tree/main/public-preview/connector-namespace-cli)
 - [Visual Studio Code](https://code.visualstudio.com/)
 - A SharePoint site + document library to receive RFPs.
@@ -108,9 +109,10 @@ flowchart LR
     | `TEAMS_TEAM_ID` | `00000000-0000-0000-0000-000000000000` | Microsoft 365 group ID of the Teams team that receives the summary card. |
     | `TEAMS_CHANNEL_ID` | `19:example-channel-id@thread.tacv2` | ID of the channel within that team that receives the summary card. |
 
-After provisioning, `authorize-connections.ps1` opens a browser to authenticate the SharePoint and
-Teams connections. For each authorization page, select **I have verified this request and trust the
-source**, then select **Allow access**. Connections that are already authenticated are skipped.
+After provisioning, the platform-specific `authorize-connections` script opens a browser to
+authenticate the SharePoint and Teams connections. For each authorization page, select **I have
+verified this request and trust the source**, then select **Allow access**. Connections that are
+already authenticated are skipped.
 
 ## Test locally
 
@@ -162,7 +164,17 @@ source**, then select **Allow access**. Connections that are already authenticat
 7. Copy the **Forwarded Address**, then create the SharePoint trigger and point it to your local
    Function host:
 
-   ```pwsh
+   On macOS or Linux:
+
+   ```sh
+   sh ./infra/scripts/configure-trigger.sh \
+     --target local \
+     --callback-base-url "https://<id>-7071.uks1.devtunnels.ms"
+   ```
+
+   On Windows:
+
+   ```powershell
    pwsh ./infra/scripts/configure-trigger.ps1 `
      -Target Local `
      -CallbackBaseUrl "https://<id>-7071.uks1.devtunnels.ms"
@@ -237,9 +249,9 @@ deployment:
 
 | Script | What it does | Why it is needed |
 |---|---|---|
-| `authorize-connections.ps1` | Opens the OAuth consent flow for the SharePoint and Teams connections, then waits for each connection to become authenticated. Connections that are already authenticated are skipped. | Bicep creates the connections, but a user must grant consent before they can access SharePoint or Teams. `azd provision` runs this script through the `postprovision` hook. |
-| `configure-trigger.ps1` | Creates the SharePoint new-file trigger and points it to either a local dev tunnel (`-Target Local`) or the deployed Function App (`-Target Azure`). It retrieves the appropriate `connector_extension` system key and adds it to the callback URL. | The callback URL and `connector_extension` system key are not available until the function is running locally or deployed to Azure, so the authenticated callback must be configured afterward. Changing between those targets requires the trigger to be deleted and recreated. |
-| `postdeploy.ps1` | Runs `configure-trigger.ps1 -Target Azure`, then checks the SharePoint and Teams connection authorization. | `azd deploy` uses this script through the `postdeploy` hook to replace any local callback with the deployed Function App callback and leave the Azure workflow ready to use. |
+| `authorize-connections.ps1` / `.sh` | Opens the OAuth consent flow for the SharePoint and Teams connections, then waits for each connection to become authenticated. Connections that are already authenticated are skipped. | Bicep creates the connections, but a user must grant consent before they can access SharePoint or Teams. `azd provision` runs the platform-specific script through the `postprovision` hook. |
+| `configure-trigger.ps1` / `.sh` | Creates the SharePoint new-file trigger and points it to either a local dev tunnel or the deployed Function App. It retrieves the appropriate `connector_extension` system key and adds it to the callback URL. | The callback URL and `connector_extension` system key are not available until the function is running locally or deployed to Azure, so the authenticated callback must be configured afterward. Changing between those targets requires the trigger to be deleted and recreated. |
+| `postdeploy.ps1` / `.sh` | Configures the trigger for Azure, then checks the SharePoint and Teams connection authorization. | `azd deploy` runs the platform-specific script through the `postdeploy` hook to replace any local callback with the deployed Function App callback and leave the Azure workflow ready to use. |
 
 ## Project layout
 
@@ -260,9 +272,12 @@ connectors-integrated-demo/
     ├── openai.bicep         # Azure OpenAI account + GPT-4o deployment + role assignment
     ├── main.parameters.json
     └── scripts/
-        ├── authorize-connections.ps1 # OAuth-authorizes both connections
-        ├── configure-trigger.ps1     # Points the trigger to local or Azure
-        └── postdeploy.ps1            # Restores the Azure callback after deployment
+        ├── authorize-connections.ps1 # Windows: OAuth-authorizes both connections
+        ├── authorize-connections.sh  # macOS/Linux equivalent
+        ├── configure-trigger.ps1     # Windows: points the trigger to local or Azure
+        ├── configure-trigger.sh      # macOS/Linux equivalent
+        ├── postdeploy.ps1            # Windows: restores the Azure callback
+        └── postdeploy.sh             # macOS/Linux equivalent
 ```
 
 ## Troubleshooting
