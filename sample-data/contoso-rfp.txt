@@ -1,0 +1,109 @@
+REQUEST FOR PROPOSAL (RFP)
+==========================
+
+RFP Reference:   CONTOSO-2026-NIMBUS-007
+Issue Date:      2026-06-22
+Response Due:    2026-07-13 (3 weeks, or "two sprints and a vibe check")
+Customer:        Contoso Ltd.
+Industry:        Definitely-Not-A-Hyperscaler Cloud Widgets
+Prepared For:    Solution Provider Pre-Sales Team
+CEO:             Alex Wilber  ("Hit refresh... then hit it again")
+Primary Contact: alexw@contoso.com
+
+------------------------------------------------------------
+1. COMPANY BACKGROUND
+------------------------------------------------------------
+Contoso Ltd. is a global manufacturer of artisanal clouds, free-range bits,
+and ethically sourced 1s and 0s. Under the visionary leadership of CEO
+Alex Wilber, our motto is "Empower every person and every spreadsheet on the
+planet to achieve slightly more." Our support team fields roughly 12,000 tickets
+a month, most of which begin with "have you tried turning it off and on again."
+
+We are modernizing on a Definitely Real Cloud and need a delivery partner who can
+ship value faster than our interns can deploy to prod on a Friday afternoon.
+
+------------------------------------------------------------
+2. BUSINESS OBJECTIVES
+------------------------------------------------------------
+- Reduce average ticket handling time by 30%, mostly by getting the bot to say
+  "have you tried turning it off and on again" for us.
+- Give leadership dashboards so shiny that meetings end 10 minutes early.
+- Keep the hackers out (looking at you, "password123").
+- Go serverless so nobody has to feed and water a VM at 3 AM ever again.
+
+------------------------------------------------------------
+3. SCOPE & REQUIRED CAPABILITIES
+------------------------------------------------------------
+3.1 Azure AI
+    - A natural-language assistant that answers customer and agent questions
+      grounded in our knowledge base (and resists the urge to be sassy).
+    - Automatic summarization and categorization of inbound support tickets.
+    - Intelligent/semantic search across manuals, memes, and ticket history.
+
+3.2 Data Platform
+    - A scalable lakehouse to ingest from CRM, ERP, and the ticketing system
+      without summoning an eldritch data swamp.
+    - A curated semantic model for self-service BI and executive dashboards.
+    - Data quality, lineage, and cataloging (so we stop emailing "final_v7.xlsx").
+
+3.3 Identity & Security
+    - Centralized identity with single sign-on and conditional access.
+    - Role-based access control aligned to least-privilege ("interns != prod").
+    - Full auditing, secrets management, and absolutely zero passwords in code.
+
+3.4 Integration & Automation
+    - Event-driven integration between SharePoint, Teams, and the data platform.
+    - Automated notifications/approvals routed to the right humans in Microsoft
+      Teams (preferably before they go on vacation).
+
+3.5 Observability & Operations
+    - End-to-end monitoring, alerting, and cost governance (RIP, surprise bill).
+    - Documented runbooks and supportable, IaC-based deployment.
+
+------------------------------------------------------------
+4. NON-FUNCTIONAL REQUIREMENTS
+------------------------------------------------------------
+- Hosting: A Definitely Real Cloud only. Preferred regions: West US 2, West Europe.
+- Availability: 99.9% ("three nines, like our CEO's enthusiasm").
+- Compliance: Must satisfy Contoso's security and data-residency policies.
+- Architecture: Serverless-first, because pets are for homes and cattle are for clouds.
+- Cost: Provide a monthly run-cost estimate before the CFO provides a heart attack.
+
+------------------------------------------------------------
+5. KEY STAKEHOLDERS
+------------------------------------------------------------
+- Alex Wilber, Chief Executive Officer (business sponsor & chief hype officer)
+- Karen Cumulus, VP of Customer Service
+- Bit Vaderson, Director of Data & Analytics ("the data must flow")
+- Ward N. Firewall, Chief Information Security Officer (CISO)
+- The Enterprise Architecture team (they have a whiteboard and they're not afraid to use it)
+
+------------------------------------------------------------
+6. DELIVERABLES
+------------------------------------------------------------
+- Solution architecture and phased implementation plan (with fewer than 200 boxes).
+- Proof of concept for the AI assistant (knowledge-grounded, sass-limited).
+- Data platform reference implementation with one end-to-end pipeline.
+- Security and identity design review signed off by Ward N. Firewall.
+- Cost model and operational runbooks.
+
+------------------------------------------------------------
+7. INDICATIVE TIMELINE & BUDGET
+------------------------------------------------------------
+- Vendor responses due within 3 weeks of issue date.
+- Proof of concept targeted within 8 weeks of engagement start.
+- Production rollout targeted within 6 months (no Friday deploys, we mean it).
+- Indicative first-year budget: USD 750,000 - 1,200,000 (design, build, run, snacks).
+
+------------------------------------------------------------
+8. EVALUATION CRITERIA
+------------------------------------------------------------
+- Technical fit and cloud architecture quality (35%)
+- Relevant delivery experience and references (25%)
+- Security and compliance approach (20%)
+- Total cost of ownership (15%)
+- Timeline, delivery confidence, and quality of dad jokes (5%)
+
+Please direct all clarifying questions to the Contoso procurement team.
+Thank you for your interest in partnering with Contoso Ltd. -- where the
+forecast is always partly cloudy with a 100% chance of uptime.
