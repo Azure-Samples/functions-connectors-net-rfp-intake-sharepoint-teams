@@ -39,30 +39,7 @@ flowchart LR
 
 ### Architecture
 
-|               RFP processing flow                |
-| :----------------------------------------------: |
-|    ![SharePoint](docs/images/sharepoint.svg)     |
-|            **SharePoint RFP library**            |
-|                        ↓                         |
-|     ![Connector](docs/images/connector.svg)      |
-| **SharePoint connection** (Connector Namespace)  |
-|                        ↓                         |
-| ![Azure Functions](docs/images/function-app.svg) |
-|   **OnNewFile function** (Azure Function App)    |
-|                        ⇄                         |
-|  ![Azure OpenAI](docs/images/azure-openai.svg)   |
-|         **Azure OpenAI** (GPT-5.4 mini)          |
-
-|             Teams notification flow              |
-| :----------------------------------------------: |
-| ![Azure Functions](docs/images/function-app.svg) |
-|   **OnNewFile function** (Azure Function App)    |
-|                        ↓                         |
-|     ![Connector](docs/images/connector.svg)      |
-|    **Teams connection** (Connector Namespace)    |
-|                        ↓                         |
-|    ![Microsoft Teams](docs/images/teams.svg)     |
-|                **Teams channel**                 |
+![Architecture diagram](docs/images/architecture.svg)
 
 ## Prerequisites
 
