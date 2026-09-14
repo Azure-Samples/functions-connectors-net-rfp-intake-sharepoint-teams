@@ -17,7 +17,7 @@ and leverages the function app's managed identity for authentication.
 ```mermaid
 flowchart LR
     A["📄 RFP uploaded to SharePoint"]
-    A -->|"New-file trigger"| B
+    A -->|"Trigger: When a file is created (properties only)"| B
 
     subgraph FA["Function App"]
       B["OnNewFile function"]
