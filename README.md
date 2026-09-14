@@ -281,21 +281,31 @@ the Bicep deployment:
 ## Project layout
 
 ```text
-connectors-integrated-demo/
+functions-connectors-net-rfp-intake-sharepoint-teams/
+├── .vscode/
+│   ├── extensions.json
+│   ├── launch.json
+│   ├── settings.json
+│   └── tasks.json
 ├── Program.cs
 ├── RfpFunctions.cs
-├── host.json
 ├── azure.yaml
+├── docs/
+│   └── images/
+│       └── architecture.svg
+├── host.json
+├── local.settings.json
 ├── rfpApp.csproj
-├── local.settings.json.sample
-├── Architecture.md
 ├── sample-data/
 │   └── contoso-rfp.txt
 └── infra/
-    ├── main.bicep
+    ├── abbreviations.json
+    ├── bicepconfig.json
     ├── connectorNamespace.bicep
-    ├── openai.bicep
+    ├── main.bicep
+    ├── main.json
     ├── main.parameters.json
+    ├── openai.bicep
     └── scripts/
         ├── authorize-connections.ps1
         ├── authorize-connections.sh
