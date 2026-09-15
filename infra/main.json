@@ -5,11 +5,11 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.42.1.51946",
-      "templateHash": "10917328494587606481"
+      "version": "0.38.33.27573",
+      "templateHash": "12080465063068224321"
     },
-    "name": "RFP intake: SharePoint -> Azure OpenAI -> Teams (.NET)",
-    "description": "Connector Namespace trigger sample that reads an RFP from SharePoint, extracts requirements with Azure OpenAI, and posts an Adaptive Card to Teams. System-key auth on the callback URL (no built-in auth)."
+    "name": "RFP intake: SharePoint -> Document Intelligence -> Teams (.NET)",
+    "description": "Connector Namespace trigger sample that reads an RFP from SharePoint, extracts its layout with Azure Document Intelligence, applies deterministic routing rules, and posts an Adaptive Card to Teams. System-key auth on the callback URL (no built-in auth)."
   },
   "parameters": {
     "environmentName": {
@@ -26,21 +26,7 @@
         "azd": {
           "type": "location"
         },
-        "description": "Location for all resources except the Connector Namespace."
-      }
-    },
-    "connectorNamespaceLocation": {
-      "type": "string",
-      "defaultValue": "westcentralus",
-      "metadata": {
-        "description": "Region for the Connector Namespace. Override via CONNECTOR_NAMESPACE_LOCATION if needed."
-      }
-    },
-    "openAiLocation": {
-      "type": "string",
-      "defaultValue": "eastus",
-      "metadata": {
-        "description": "Location for the Azure OpenAI account. Override via AZURE_OPENAI_LOCATION if needed."
+        "description": "Location for all resources."
       }
     },
     "userPrincipalId": {
@@ -50,7 +36,7 @@
         "azd": {
           "type": "principalId"
         },
-        "description": "Id of the user identity to be used for testing and debugging. Granted access to the connections + OpenAI so the same code can be debugged locally with `az login`."
+        "description": "Id of the user identity to be used for testing and debugging. Granted access to the connections + Document Intelligence so the same code can be debugged locally with `az login`."
       }
     },
     "sharepointSiteUrl": {
@@ -82,13 +68,6 @@
       "type": "string",
       "metadata": {
         "description": "Microsoft Teams channel ID to post the RFP summary card to."
-      }
-    },
-    "openAiDeploymentName": {
-      "type": "string",
-      "defaultValue": "gpt-5.4-mini",
-      "metadata": {
-        "description": "Azure OpenAI chat model deployment name."
       }
     }
   },
@@ -245,7 +224,7 @@
     "connectorNamespaceName": "[format('{0}{1}', variables('abbrs').connectorNamespaces, variables('resourceToken'))]",
     "sharepointConnectionName": "[format('{0}sp-{1}', variables('abbrs').connectorNamespacesConnections, variables('resourceToken'))]",
     "teamsConnectionName": "[format('{0}teams-{1}', variables('abbrs').connectorNamespacesConnections, variables('resourceToken'))]",
-    "openAiName": "[format('{0}{1}', variables('abbrs').cognitiveServicesAccounts, variables('resourceToken'))]",
+    "documentIntelligenceName": "[format('{0}di-{1}', variables('abbrs').cognitiveServicesAccounts, variables('resourceToken'))]",
     "deploymentStorageContainerName": "[format('app-package-{0}-{1}', take(variables('functionAppName'), 32), take(toLower(uniqueString(variables('functionAppName'), parameters('environmentName'))), 7))]",
     "storageBlobDataOwner": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
     "storageQueueDataContributor": "974c5e8b-45b9-4653-ba55-5f855dd0fb88",
@@ -13565,7 +13544,7 @@
             "value": "[variables('connectorNamespaceName')]"
           },
           "location": {
-            "value": "[parameters('connectorNamespaceLocation')]"
+            "value": "[parameters('location')]"
           },
           "tags": {
             "value": "[variables('tags')]"
@@ -13589,8 +13568,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.42.1.51946",
-              "templateHash": "6359905463697359356"
+              "version": "0.38.33.27573",
+              "templateHash": "13851902210590612084"
             }
           },
           "parameters": {
@@ -13819,10 +13798,10 @@
         "rg"
       ]
     },
-    "openAi": {
+    "documentIntelligence": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
-      "name": "[variables('openAiName')]",
+      "name": "[variables('documentIntelligenceName')]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -13831,16 +13810,13 @@
         "mode": "Incremental",
         "parameters": {
           "name": {
-            "value": "[variables('openAiName')]"
+            "value": "[variables('documentIntelligenceName')]"
           },
           "location": {
-            "value": "[parameters('openAiLocation')]"
+            "value": "[parameters('location')]"
           },
           "tags": {
             "value": "[variables('tags')]"
-          },
-          "deploymentName": {
-            "value": "[parameters('openAiDeploymentName')]"
           },
           "functionAppPrincipalId": {
             "value": "[reference('funcUserAssignedIdentity').outputs.principalId.value]"
@@ -13855,15 +13831,15 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.42.1.51946",
-              "templateHash": "7824531619210589705"
+              "version": "0.38.33.27573",
+              "templateHash": "912864976104126298"
             }
           },
           "parameters": {
             "name": {
               "type": "string",
               "metadata": {
-                "description": "Name of the Azure OpenAI (Cognitive Services) account."
+                "description": "Name of the Azure Document Intelligence account."
               }
             },
             "location": {
@@ -13873,38 +13849,10 @@
               "type": "object",
               "defaultValue": {}
             },
-            "deploymentName": {
-              "type": "string",
-              "defaultValue": "gpt-5.4-mini",
-              "metadata": {
-                "description": "Name of the chat model deployment (e.g. gpt-5.4-mini)."
-              }
-            },
-            "modelName": {
-              "type": "string",
-              "defaultValue": "gpt-5.4-mini",
-              "metadata": {
-                "description": "Model name to deploy."
-              }
-            },
-            "modelVersion": {
-              "type": "string",
-              "defaultValue": "2026-03-17",
-              "metadata": {
-                "description": "Model version to deploy."
-              }
-            },
-            "capacity": {
-              "type": "int",
-              "defaultValue": 20,
-              "metadata": {
-                "description": "Capacity (TPM in thousands) for the deployment."
-              }
-            },
             "functionAppPrincipalId": {
               "type": "string",
               "metadata": {
-                "description": "Principal ID of the function app MI to grant Cognitive Services OpenAI User."
+                "description": "Principal ID of the function app MI to grant Cognitive Services User."
               }
             },
             "userPrincipalId": {
@@ -13916,7 +13864,7 @@
             }
           },
           "variables": {
-            "openAiUserRoleId": "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd"
+            "cognitiveServicesUserRoleId": "a97b65f3-24c7-4388-baec-2e87135dc908"
           },
           "resources": [
             {
@@ -13925,7 +13873,7 @@
               "name": "[parameters('name')]",
               "location": "[parameters('location')]",
               "tags": "[parameters('tags')]",
-              "kind": "OpenAI",
+              "kind": "FormRecognizer",
               "sku": {
                 "name": "S0"
               },
@@ -13936,31 +13884,12 @@
               }
             },
             {
-              "type": "Microsoft.CognitiveServices/accounts/deployments",
-              "apiVersion": "2024-10-01",
-              "name": "[format('{0}/{1}', parameters('name'), parameters('deploymentName'))]",
-              "sku": {
-                "name": "GlobalStandard",
-                "capacity": "[parameters('capacity')]"
-              },
-              "properties": {
-                "model": {
-                  "format": "OpenAI",
-                  "name": "[parameters('modelName')]",
-                  "version": "[parameters('modelVersion')]"
-                }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]"
-              ]
-            },
-            {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]",
-              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), parameters('functionAppPrincipalId'), variables('openAiUserRoleId'))]",
+              "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), parameters('functionAppPrincipalId'), variables('cognitiveServicesUserRoleId'))]",
               "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('openAiUserRoleId'))]",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cognitiveServicesUserRoleId'))]",
                 "principalId": "[parameters('functionAppPrincipalId')]",
                 "principalType": "ServicePrincipal"
               },
@@ -13972,10 +13901,10 @@
               "condition": "[not(empty(parameters('userPrincipalId')))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]",
-              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), parameters('userPrincipalId'), variables('openAiUserRoleId'))]",
+              "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), parameters('userPrincipalId'), variables('cognitiveServicesUserRoleId'))]",
               "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('openAiUserRoleId'))]",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cognitiveServicesUserRoleId'))]",
                 "principalId": "[parameters('userPrincipalId')]",
                 "principalType": "User"
               },
@@ -13988,16 +13917,9 @@
             "endpoint": {
               "type": "string",
               "metadata": {
-                "description": "The endpoint of the Azure OpenAI account."
+                "description": "The endpoint of the Azure Document Intelligence account."
               },
               "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), '2024-10-01').endpoint]"
-            },
-            "deploymentName": {
-              "type": "string",
-              "metadata": {
-                "description": "The chat model deployment name."
-              },
-              "value": "[parameters('deploymentName')]"
             }
           }
         }
@@ -14088,8 +14010,7 @@
                   "TEAMS_CHANNEL_ID": "[parameters('teamsChannelId')]",
                   "TEAMS_POST_AS": "Flow bot",
                   "TEAMS_POST_IN": "Channel",
-                  "AZURE_OPENAI_ENDPOINT": "[reference('openAi').outputs.endpoint.value]",
-                  "AZURE_OPENAI_DEPLOYMENT": "[reference('openAi').outputs.deploymentName.value]"
+                  "DOCUMENT_INTELLIGENCE_ENDPOINT": "[reference('documentIntelligence').outputs.endpoint.value]"
                 }
               }
             ]
@@ -26757,10 +26678,10 @@
       },
       "dependsOn": [
         "connectorNamespace",
+        "documentIntelligence",
         "functionAppPlan",
         "funcUserAssignedIdentity",
         "monitoring",
-        "openAi",
         "rg",
         "storageAccount"
       ]

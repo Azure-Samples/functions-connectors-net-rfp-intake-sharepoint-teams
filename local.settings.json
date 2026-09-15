@@ -15,7 +15,6 @@
     "TEAMS_POST_AS": "Flow bot",
     "TEAMS_POST_IN": "Channel",
 
-    "AZURE_OPENAI_ENDPOINT": "https://<your-openai-resource>.openai.azure.com/",
-    "AZURE_OPENAI_DEPLOYMENT": "gpt-5.4-mini"
+    "DOCUMENT_INTELLIGENCE_ENDPOINT": "https://<your-document-intelligence-resource>.cognitiveservices.azure.com/"
   }
 }

@@ -1,8 +1,9 @@
-# Automated RFP Intake with SharePoint, Azure OpenAI, and Teams
+# Automated RFP Intake with SharePoint, Document Intelligence, and Teams
 
 > A customer submits an RFP document to a shared SharePoint library. An Azure
-> Function picks it up, an AI model extracts the requirements, and a summary
-> card is posted to a Microsoft Teams channel so the right people can respond.
+> Function picks it up, Azure Document Intelligence extracts its text and
+> layout, deterministic routing rules identify the required capabilities, and a
+> summary card is posted to a Microsoft Teams channel.
 
 This .NET sample shows how to implement the scenario above using the
 [Azure Functions Connector extension](https://github.com/Azure/azure-functions-connector-extension)
@@ -30,9 +31,10 @@ flowchart LR
     end
 
     B -->|"Get file content"| SP
-    SP -->|"RFP text"| B
-    B -->|"Send RFP text"| C["Azure OpenAI<br/>GPT-5.4 mini"]
-    C -->|"Requirements JSON"| B
+    SP -->|"RFP bytes"| B
+    B -->|"Analyze document"| C["Azure Document Intelligence<br/>prebuilt-layout"]
+    C -->|"Extracted text and layout"| B
+    B -->|"Apply capability and SME routing rules"| B
     B -->|"Post Adaptive Card"| TM
     TM --> E["💬 Teams channel<br/>New RFP card"]
 ```
@@ -48,13 +50,18 @@ flowchart LR
   2.75.0
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=macos%2Cisolated-process%2Cnode-v4%2Cpython-v2%2Chttp-trigger%2Ccontainer-apps&pivots=programming-language-csharp#install-the-azure-functions-core-tools)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite)
+  for local development.
 - [`jq`](https://jqlang.org/download/) (macOS and Linux only)
 - [`connector-namespace` Azure CLI extension](https://github.com/Azure/Connectors/tree/main/public-preview/connector-namespace-cli)
 - [Visual Studio Code](https://code.visualstudio.com/)
 - A SharePoint site + document library to receive RFPs.
-- A Microsoft Teams **team** and **public channel** to post to. Posting to
-  **private channels is not supported**. The Teams **Workflows** app must be
-  allowed in the
+- RFPs with a `Customer`, `Client`, or `Organization` field and a numbered
+  `Required Capabilities` section. The included sample demonstrates the
+  expected structure.
+- A Microsoft Teams **team** and **standard or private channel** to post to.
+  The deployed end-to-end workflow has been verified with a private channel.
+  The Teams **Workflows** app must be allowed in the
   [Teams admin center](https://admin.teams.microsoft.com/policies/manage-apps)
   (required by the card-posting action). See the
   [Microsoft Teams connector documentation](https://learn.microsoft.com/connectors/teams/?tabs=text1%2Cdotnet)
@@ -82,7 +89,7 @@ flowchart LR
    azd env new rfp-demo
    ```
 
-4. Provision resoures:
+4. Provision resources:
 
    ```pwsh
    azd provision
@@ -93,7 +100,7 @@ flowchart LR
    - **Azure Subscription** (`00000000-0000-0000-0000-000000000000`):
      subscription where the resources will be provisioned.
    - **Location** (`East US 2`): Azure region where resources will be
-     deployed.
+     deployed. Choose a region that supports Azure Document Intelligence.
    - **`SHAREPOINT_SITE_URL`**
      (`https://contoso.sharepoint.com/sites/RFPs`): SharePoint site that
      contains the document library to monitor.
@@ -110,6 +117,9 @@ authorization page, select **I have verified this request and trust the
 source**, then select **Allow access**. Connections that are already
 authenticated are skipped.
 
+To provision and deploy the complete application in one command, run `azd up`
+instead of running `azd provision` and `azd deploy` separately.
+
 ## Test locally
 
 ### Run the app locally
@@ -125,17 +135,13 @@ authenticated are skipped.
    To find your Teams team ID, list the teams you have joined:
 
    ```pwsh
-   az rest --method get \
-     --url "https://graph.microsoft.com/v1.0/me/joinedTeams" \
-     --query "value[].{name:displayName,teamId:id}" -o table
+   az rest --method get --url "https://graph.microsoft.com/v1.0/me/joinedTeams" --query "value[].{name:displayName,teamId:id}" -o table
    ```
 
    Then use the team ID to list its channels:
 
    ```pwsh
-   az rest --method get \
-     --url "https://graph.microsoft.com/v1.0/teams/<team-id>/channels" \
-     --query "value[].{name:displayName,channelId:id}" -o table
+   az rest --method get --url "https://graph.microsoft.com/v1.0/teams/<team-id>/channels" --query "value[].{name:displayName,channelId:id}" -o table
    ```
 
 2. Start Azurite in a separate terminal:
@@ -188,29 +194,64 @@ authenticated are skipped.
 
 ## Upload file
 
-1. Upload `sample-data/contoso-rfp.txt` to the monitored SharePoint library.
+1. Upload `sample-data/contoso-rfp.pdf` to the monitored SharePoint library.
+   Use a new file name if the sample was uploaded previously because the trigger
+   listens for newly created files.
 2. The function runs within the trigger's polling interval (~5 min).
 3. A **"New RFP received"** Adaptive Card appears in your Teams channel:
 
    ```text
    📄 New RFP received
    Customer:      Contoso Ltd.
-   Source file:   contoso-rfp.txt
+   Source file:   contoso-rfp.pdf
 
    Required capabilities
    - Azure AI
    - Data Platform
-   - Identity
+   - Identity & Security
+   - Integration & Automation
+   - Observability & Operations
 
    Recommended SMEs
    - AI Specialist
+   - Data Platform Engineer
    - Security Architect
+   - Integration Architect
+   - Cloud Operations Specialist
    ```
 
-   This sample assumes **text-style RFPs** (`.txt` / `.md`). Binary formats
-   (PDF, DOCX) would need a document-extraction step (e.g. Azure AI Document
-   Intelligence) before the Azure OpenAI call, which is **not** included in the
-   sample.
+   The `prebuilt-layout` model supports PDF, image, Microsoft Office, and HTML
+   documents. Document Intelligence performs OCR and layout extraction; the
+   application then uses explicit, testable rules to parse the customer and
+   numbered capability headings and map them to SME roles. No generative model
+   is used.
+
+### Run automated tests
+
+Run the offline parser and SharePoint-content decoding tests:
+
+```pwsh
+dotnet test tests/RfpApp.Tests/RfpApp.Tests.csproj --filter "Category!=Integration"
+```
+
+To verify the included PDF against a live Document Intelligence account, sign
+in with `az login` and set the account endpoint. `azd provision` grants the
+provisioning identity the `Cognitive Services User` role. If you use a different
+account, grant that role before running the test.
+
+PowerShell:
+
+```pwsh
+$env:DOCUMENT_INTELLIGENCE_ENDPOINT = "https://<resource>.cognitiveservices.azure.com/"
+dotnet test tests/RfpApp.Tests/RfpApp.Tests.csproj --filter "Category=Integration"
+```
+
+macOS or Linux:
+
+```sh
+export DOCUMENT_INTELLIGENCE_ENDPOINT="https://<resource>.cognitiveservices.azure.com/"
+dotnet test tests/RfpApp.Tests/RfpApp.Tests.csproj --filter "Category=Integration"
+```
 
 ## Deploy Function App to Azure
 
@@ -232,11 +273,15 @@ authenticated are skipped.
    must be fetched separately.
 3. **Fetch content.** The function calls the SharePoint **"Get file content"**
    action (`SharePointOnlineClient.GetFileContentAsync`) with the file
-   identifier from the trigger payload.
-4. **Extract requirements.** The RFP text is sent to Azure OpenAI
-   (GPT-5.4 mini), which returns `customer`, `requiredCapabilities`, and
-   `recommendedSMEs` as structured JSON.
-5. **Notify.** The function builds an Adaptive Card and posts it to a Teams
+   identifier from the trigger payload and decodes the connector's JSON Base64
+   binary response into the original document bytes.
+4. **Extract the document.** The original file bytes are sent to Azure Document
+   Intelligence's `prebuilt-layout` model, which returns OCR text and document
+   structure.
+5. **Route the RFP.** The function parses the customer and numbered headings in
+   the `Required Capabilities` section, then maps recognized capability terms
+   to SME roles with deterministic routing rules.
+6. **Notify.** The function builds an Adaptive Card and posts it to a Teams
    channel with the **"Post card in a chat or channel"** action
    (`TeamsClient.PostCardToConversationAsync`).
 
@@ -249,9 +294,12 @@ azd down --purge
 ## How auth works (no secrets)
 
 - **Function-app user-assigned managed identity:** Calls the SharePoint and
-  Teams connection runtime URLs and Azure OpenAI. It has an access policy on
-  each connection and the `Cognitive Services OpenAI User` role on the OpenAI
-  account.
+  Teams connection runtime URLs and Azure Document Intelligence. It has an
+  access policy on each connection and the `Cognitive Services User` role on
+  the Document Intelligence account.
+- **Application Insights:** The Function worker uses the same managed identity
+  to export OpenTelemetry. Local authentication is disabled on the Application
+  Insights and Document Intelligence resources.
 - **Connector Namespace system managed identity:** Polls the SharePoint
   trigger and delivers callbacks.
 - **Callback authorization:** Uses the `connector_extension` system key on the
@@ -288,7 +336,9 @@ functions-connectors-net-rfp-intake-sharepoint-teams/
 │   ├── settings.json
 │   └── tasks.json
 ├── Program.cs
+├── RfpDocumentAnalyzer.cs
 ├── RfpFunctions.cs
+├── SharePointFileContent.cs
 ├── azure.yaml
 ├── docs/
 │   └── images/
@@ -297,7 +347,13 @@ functions-connectors-net-rfp-intake-sharepoint-teams/
 ├── local.settings.json
 ├── rfpApp.csproj
 ├── sample-data/
-│   └── contoso-rfp.txt
+│   └── contoso-rfp.pdf
+├── tests/
+│   └── RfpApp.Tests/
+│       ├── RfpAnalysisParserTests.cs
+│       ├── RfpDocumentAnalyzerIntegrationTests.cs
+│       ├── SharePointFileContentTests.cs
+│       └── RfpApp.Tests.csproj
 └── infra/
     ├── abbreviations.json
     ├── bicepconfig.json
@@ -305,7 +361,7 @@ functions-connectors-net-rfp-intake-sharepoint-teams/
     ├── main.bicep
     ├── main.json
     ├── main.parameters.json
-    ├── openai.bicep
+    ├── documentIntelligence.bicep
     └── scripts/
         ├── authorize-connections.ps1
         ├── authorize-connections.sh
@@ -327,9 +383,19 @@ following:
   visibility is **Public**.
 - Ensure Azurite is running before starting the function locally and configuring
   the trigger.
+- Allow up to five minutes for the SharePoint trigger to detect a newly created
+  file. Each new test upload produces another Teams post.
 - Leave `AZURE_CLIENT_ID` empty in `local.settings.json` for local development.
   The Function App's managed identity client ID is only needed when running in
   Azure.
+- Confirm the Teams connection was authorized by a user who can access the
+  destination team and channel. Private channels are supported when that user
+  is a channel member.
+- Confirm the uploaded file is in a
+  [format supported by the `prebuilt-layout` model](https://learn.microsoft.com/azure/ai-services/document-intelligence/prebuilt/layout?view=doc-intel-4.0.0#input-requirements).
+- Confirm the RFP contains a numbered `Required Capabilities` section. The
+  deterministic parser intentionally returns empty capability and SME lists
+  rather than inventing requirements that are not present.
 
 ## Resources
 
@@ -337,3 +403,5 @@ following:
   — the trigger binding used here.
 - [Azure Connectors .NET SDK](https://github.com/Azure/Connectors-NET-SDK) —
   typed clients for SharePoint, Teams, and other connectors.
+- [Azure Document Intelligence layout model](https://learn.microsoft.com/azure/ai-services/document-intelligence/prebuilt/layout?view=doc-intel-4.0.0)
+  — OCR and layout extraction used by this sample.
