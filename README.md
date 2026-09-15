@@ -260,7 +260,8 @@ dotnet test tests/RfpApp.Tests/RfpApp.Tests.csproj --filter "Category=Integratio
    must be fetched separately.
 3. **Fetch content.** The function calls the SharePoint **"Get file content"**
    action (`SharePointOnlineClient.GetFileContentAsync`) with the file
-   identifier from the trigger payload.
+   identifier from the trigger payload and decodes the connector's JSON Base64
+   binary response into the original document bytes.
 4. **Extract the document.** The original file bytes are sent to Azure Document
    Intelligence's `prebuilt-layout` model, which returns OCR text and document
    structure.
@@ -321,6 +322,7 @@ functions-connectors-net-rfp-intake-sharepoint-teams/
 ├── Program.cs
 ├── RfpDocumentAnalyzer.cs
 ├── RfpFunctions.cs
+├── SharePointFileContent.cs
 ├── azure.yaml
 ├── docs/
 │   └── images/

@@ -17,13 +17,6 @@ var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
     .ConfigureServices(services =>
     {
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")))
-        {
-            services.AddOpenTelemetry()
-                .UseFunctionsWorkerDefaults()
-                .UseAzureMonitorExporter();
-        }
-
         // One credential for everything. In Azure this resolves to the function app's
         // user-assigned managed identity (AZURE_CLIENT_ID); locally it falls back to the
         // signed-in az/VS/CLI identity via DefaultAzureCredential.
@@ -31,6 +24,13 @@ var host = new HostBuilder()
         {
             ManagedIdentityClientId = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID"),
         });
+
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")))
+        {
+            services.AddOpenTelemetry()
+                .UseFunctionsWorkerDefaults()
+                .UseAzureMonitorExporter(options => options.Credential = credential);
+        }
 
         // SharePoint Online connector client — used to call the "Get file content" action
         // against the connection's runtime URL (authorized by the MI access policy).

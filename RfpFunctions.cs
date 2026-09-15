@@ -104,10 +104,11 @@ public class RfpFunctions
         // we pre-encode the site once here to end up double-encoded; the trigger's {Identifier} is
         // already single-encoded and is passed through as-is.
         var encodedSite = Uri.EscapeDataString(siteAddress);
-        return await _sharePoint.GetFileContentAsync(
+        byte[] content = await _sharePoint.GetFileContentAsync(
             encodedSite,
             fileIdentifier,
             cancellationToken: cancellationToken);
+        return SharePointFileContent.Decode(content);
     }
 
     private async Task PostToTeamsAsync(RfpAnalysis analysis, string fileName, CancellationToken cancellationToken)
