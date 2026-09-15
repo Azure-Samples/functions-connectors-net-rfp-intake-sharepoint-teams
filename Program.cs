@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-using Azure.AI.OpenAI;
+using Azure.AI.DocumentIntelligence;
 using Azure.Connectors.Sdk.SharePointOnline;
 using Azure.Connectors.Sdk.Teams;
 using Azure.Identity;
@@ -11,6 +11,7 @@ using Microsoft.Azure.Functions.Worker.OpenTelemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry;
+using RfpApp;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
@@ -40,9 +41,10 @@ var host = new HostBuilder()
         var teamsRuntimeUrl = RequireEnv("TEAMS_CONNECTION_RUNTIME_URL");
         services.AddSingleton(new TeamsClient(new Uri(teamsRuntimeUrl), credential));
 
-        // Azure OpenAI client — used to reason over the RFP text and extract requirements.
-        var openAiEndpoint = RequireEnv("AZURE_OPENAI_ENDPOINT");
-        services.AddSingleton(new AzureOpenAIClient(new Uri(openAiEndpoint), credential));
+        // Document Intelligence client — extracts text and layout from PDF, Office, and image RFPs.
+        var documentIntelligenceEndpoint = RequireEnv("DOCUMENT_INTELLIGENCE_ENDPOINT");
+        services.AddSingleton(new DocumentIntelligenceClient(new Uri(documentIntelligenceEndpoint), credential));
+        services.AddSingleton<RfpDocumentAnalyzer>();
     })
     .Build();
 

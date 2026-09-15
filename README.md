@@ -1,8 +1,9 @@
-# Automated RFP Intake with SharePoint, Azure OpenAI, and Teams
+# Automated RFP Intake with SharePoint, Document Intelligence, and Teams
 
 > A customer submits an RFP document to a shared SharePoint library. An Azure
-> Function picks it up, an AI model extracts the requirements, and a summary
-> card is posted to a Microsoft Teams channel so the right people can respond.
+> Function picks it up, Azure Document Intelligence extracts its text and
+> layout, deterministic routing rules identify the required capabilities, and a
+> summary card is posted to a Microsoft Teams channel.
 
 This .NET sample shows how to implement the scenario above using the
 [Azure Functions Connector extension](https://github.com/Azure/azure-functions-connector-extension)
@@ -30,9 +31,10 @@ flowchart LR
     end
 
     B -->|"Get file content"| SP
-    SP -->|"RFP text"| B
-    B -->|"Send RFP text"| C["Azure OpenAI<br/>GPT-5.4 mini"]
-    C -->|"Requirements JSON"| B
+    SP -->|"RFP bytes"| B
+    B -->|"Analyze document"| C["Azure Document Intelligence<br/>prebuilt-layout"]
+    C -->|"Extracted text and layout"| B
+    B -->|"Apply capability and SME routing rules"| B
     B -->|"Post Adaptive Card"| TM
     TM --> E["💬 Teams channel<br/>New RFP card"]
 ```
@@ -52,6 +54,9 @@ flowchart LR
 - [`connector-namespace` Azure CLI extension](https://github.com/Azure/Connectors/tree/main/public-preview/connector-namespace-cli)
 - [Visual Studio Code](https://code.visualstudio.com/)
 - A SharePoint site + document library to receive RFPs.
+- RFPs with a `Customer`, `Client`, or `Organization` field and a numbered
+  `Required Capabilities` section. The included sample demonstrates the
+  expected structure.
 - A Microsoft Teams **team** and **public channel** to post to. Posting to
   **private channels is not supported**. The Teams **Workflows** app must be
   allowed in the
@@ -188,29 +193,52 @@ authenticated are skipped.
 
 ## Upload file
 
-1. Upload `sample-data/contoso-rfp.txt` to the monitored SharePoint library.
+1. Upload `sample-data/contoso-rfp.pdf` to the monitored SharePoint library.
 2. The function runs within the trigger's polling interval (~5 min).
 3. A **"New RFP received"** Adaptive Card appears in your Teams channel:
 
    ```text
    📄 New RFP received
    Customer:      Contoso Ltd.
-   Source file:   contoso-rfp.txt
+   Source file:   contoso-rfp.pdf
 
    Required capabilities
    - Azure AI
    - Data Platform
-   - Identity
+   - Identity & Security
+   - Integration & Automation
+   - Observability & Operations
 
    Recommended SMEs
    - AI Specialist
+   - Data Platform Engineer
    - Security Architect
+   - Integration Architect
+   - Cloud Operations Specialist
    ```
 
-   This sample assumes **text-style RFPs** (`.txt` / `.md`). Binary formats
-   (PDF, DOCX) would need a document-extraction step (e.g. Azure AI Document
-   Intelligence) before the Azure OpenAI call, which is **not** included in the
-   sample.
+   The `prebuilt-layout` model supports PDF, image, Microsoft Office, and HTML
+   documents. Document Intelligence performs OCR and layout extraction; the
+   application then uses explicit, testable rules to parse the customer and
+   numbered capability headings and map them to SME roles. No generative model
+   is used.
+
+### Run automated tests
+
+Run the deterministic parser tests:
+
+```pwsh
+dotnet test tests/RfpApp.Tests/RfpApp.Tests.csproj --filter "Category!=Integration"
+```
+
+To verify the included PDF against a live Document Intelligence account, sign
+in with `az login`, grant your identity the `Cognitive Services User` role, and
+run:
+
+```pwsh
+$env:DOCUMENT_INTELLIGENCE_ENDPOINT = "https://<resource>.cognitiveservices.azure.com/"
+dotnet test tests/RfpApp.Tests/RfpApp.Tests.csproj --filter "Category=Integration"
+```
 
 ## Deploy Function App to Azure
 
@@ -233,10 +261,13 @@ authenticated are skipped.
 3. **Fetch content.** The function calls the SharePoint **"Get file content"**
    action (`SharePointOnlineClient.GetFileContentAsync`) with the file
    identifier from the trigger payload.
-4. **Extract requirements.** The RFP text is sent to Azure OpenAI
-   (GPT-5.4 mini), which returns `customer`, `requiredCapabilities`, and
-   `recommendedSMEs` as structured JSON.
-5. **Notify.** The function builds an Adaptive Card and posts it to a Teams
+4. **Extract the document.** The original file bytes are sent to Azure Document
+   Intelligence's `prebuilt-layout` model, which returns OCR text and document
+   structure.
+5. **Route the RFP.** The function parses the customer and numbered headings in
+   the `Required Capabilities` section, then maps recognized capability terms
+   to SME roles with deterministic routing rules.
+6. **Notify.** The function builds an Adaptive Card and posts it to a Teams
    channel with the **"Post card in a chat or channel"** action
    (`TeamsClient.PostCardToConversationAsync`).
 
@@ -249,9 +280,9 @@ azd down --purge
 ## How auth works (no secrets)
 
 - **Function-app user-assigned managed identity:** Calls the SharePoint and
-  Teams connection runtime URLs and Azure OpenAI. It has an access policy on
-  each connection and the `Cognitive Services OpenAI User` role on the OpenAI
-  account.
+  Teams connection runtime URLs and Azure Document Intelligence. It has an
+  access policy on each connection and the `Cognitive Services User` role on
+  the Document Intelligence account.
 - **Connector Namespace system managed identity:** Polls the SharePoint
   trigger and delivers callbacks.
 - **Callback authorization:** Uses the `connector_extension` system key on the
@@ -288,6 +319,7 @@ functions-connectors-net-rfp-intake-sharepoint-teams/
 │   ├── settings.json
 │   └── tasks.json
 ├── Program.cs
+├── RfpDocumentAnalyzer.cs
 ├── RfpFunctions.cs
 ├── azure.yaml
 ├── docs/
@@ -297,7 +329,11 @@ functions-connectors-net-rfp-intake-sharepoint-teams/
 ├── local.settings.json
 ├── rfpApp.csproj
 ├── sample-data/
-│   └── contoso-rfp.txt
+│   └── contoso-rfp.pdf
+├── tests/
+│   └── RfpApp.Tests/
+│       ├── RfpAnalysisParserTests.cs
+│       └── RfpApp.Tests.csproj
 └── infra/
     ├── abbreviations.json
     ├── bicepconfig.json
@@ -305,7 +341,7 @@ functions-connectors-net-rfp-intake-sharepoint-teams/
     ├── main.bicep
     ├── main.json
     ├── main.parameters.json
-    ├── openai.bicep
+    ├── documentIntelligence.bicep
     └── scripts/
         ├── authorize-connections.ps1
         ├── authorize-connections.sh
@@ -330,6 +366,11 @@ following:
 - Leave `AZURE_CLIENT_ID` empty in `local.settings.json` for local development.
   The Function App's managed identity client ID is only needed when running in
   Azure.
+- Confirm the uploaded file is in a
+  [format supported by the `prebuilt-layout` model](https://learn.microsoft.com/azure/ai-services/document-intelligence/prebuilt/layout?view=doc-intel-4.0.0#input-requirements).
+- Confirm the RFP contains a numbered `Required Capabilities` section. The
+  deterministic parser intentionally returns empty capability and SME lists
+  rather than inventing requirements that are not present.
 
 ## Resources
 
@@ -337,3 +378,5 @@ following:
   — the trigger binding used here.
 - [Azure Connectors .NET SDK](https://github.com/Azure/Connectors-NET-SDK) —
   typed clients for SharePoint, Teams, and other connectors.
+- [Azure Document Intelligence layout model](https://learn.microsoft.com/azure/ai-services/document-intelligence/prebuilt/layout?view=doc-intel-4.0.0)
+  — OCR and layout extraction used by this sample.

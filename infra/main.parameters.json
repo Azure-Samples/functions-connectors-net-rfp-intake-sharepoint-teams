@@ -11,8 +11,8 @@
     "connectorNamespaceLocation": {
       "value": "${CONNECTOR_NAMESPACE_LOCATION=westcentralus}"
     },
-    "openAiLocation": {
-      "value": "${AZURE_OPENAI_LOCATION=eastus}"
+    "documentIntelligenceLocation": {
+      "value": "${DOCUMENT_INTELLIGENCE_LOCATION=eastus}"
     },
     "userPrincipalId": {
       "value": "${AZURE_PRINCIPAL_ID}"
@@ -31,9 +31,6 @@
     },
     "teamsChannelId": {
       "value": "${TEAMS_CHANNEL_ID}"
-    },
-    "openAiDeploymentName": {
-      "value": "${AZURE_OPENAI_DEPLOYMENT=gpt-5.4-mini}"
     }
   }
 }

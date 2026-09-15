@@ -1,9 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-using System.Text;
 using System.Text.Json;
-using Azure.AI.OpenAI;
 using Azure.Connectors.Sdk.SharePointOnline;
 using Azure.Connectors.Sdk.SharePointOnline.Models;
 using Azure.Connectors.Sdk.Teams;
@@ -11,16 +9,15 @@ using Azure.Connectors.Sdk.Teams.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Connector;
 using Microsoft.Extensions.Logging;
-using OpenAI.Chat;
-using ChatMessage = OpenAI.Chat.ChatMessage;
 
 namespace RfpApp;
 
 /// <summary>
 /// End-to-end RFP intake:
 ///   SharePoint "When a file is created (properties only)" trigger
-///     -> SharePoint "Get file content" action (fetch the RFP text)
-///       -> Azure OpenAI (extract customer / capabilities / recommended SMEs)
+///     -> SharePoint "Get file content" action (fetch the RFP document)
+///       -> Azure Document Intelligence (extract text and layout)
+///         -> deterministic RFP routing rules (identify capabilities and SMEs)
 ///         -> Teams "Post card in a chat or channel" action (notify the team).
 /// </summary>
 public class RfpFunctions
@@ -28,18 +25,18 @@ public class RfpFunctions
     private readonly ILogger<RfpFunctions> _logger;
     private readonly SharePointOnlineClient _sharePoint;
     private readonly TeamsClient _teams;
-    private readonly AzureOpenAIClient _openAi;
+    private readonly RfpDocumentAnalyzer _documentAnalyzer;
 
     public RfpFunctions(
         ILogger<RfpFunctions> logger,
         SharePointOnlineClient sharePoint,
         TeamsClient teams,
-        AzureOpenAIClient openAi)
+        RfpDocumentAnalyzer documentAnalyzer)
     {
         _logger = logger;
         _sharePoint = sharePoint;
         _teams = teams;
-        _openAi = openAi;
+        _documentAnalyzer = documentAnalyzer;
     }
 
     [Function("OnNewFile")]
@@ -71,16 +68,16 @@ public class RfpFunctions
 
             try
             {
-                // 1. Fetch the RFP text from SharePoint (non-deprecated "Get file content" action).
-                var rfpText = await GetRfpTextAsync(siteAddress, fileIdentifier, cancellationToken);
-                if (string.IsNullOrWhiteSpace(rfpText))
+                // 1. Fetch the original RFP bytes from SharePoint.
+                var document = await GetRfpDocumentAsync(siteAddress, fileIdentifier, cancellationToken);
+                if (document.Length == 0)
                 {
-                    _logger.LogWarning("'{FileName}' had no readable text content; skipping.", fileName);
+                    _logger.LogWarning("'{FileName}' was empty; skipping.", fileName);
                     continue;
                 }
 
-                // 2. Ask Azure OpenAI to extract the structured requirements.
-                var analysis = await AnalyzeRfpAsync(rfpText, cancellationToken);
+                // 2. Extract document structure with Document Intelligence and apply routing rules.
+                var analysis = await _documentAnalyzer.AnalyzeAsync(document, cancellationToken);
 
                 // 3. Post an Adaptive Card to the Teams channel.
                 await PostToTeamsAsync(analysis, fileName, cancellationToken);
@@ -96,47 +93,21 @@ public class RfpFunctions
         }
     }
 
-    private async Task<string> GetRfpTextAsync(string siteAddress, string fileIdentifier, CancellationToken cancellationToken)
+    private async Task<byte[]> GetRfpDocumentAsync(
+        string siteAddress,
+        string fileIdentifier,
+        CancellationToken cancellationToken)
     {
         // SharePoint Online connector: GetFileContentAsync -> byte[].
         // The connector's "dataset" (site address) parameter is declared x-ms-url-encoding: double,
         // so it must arrive double-encoded. The SDK applies one Uri.EscapeDataString internally, so
         // we pre-encode the site once here to end up double-encoded; the trigger's {Identifier} is
         // already single-encoded and is passed through as-is.
-        // This sample assumes text-style RFPs (.txt / .md). Binary formats (PDF, DOCX) would
-        // need a document-extraction step (e.g. Azure AI Document Intelligence) before the AI call.
         var encodedSite = Uri.EscapeDataString(siteAddress);
-        byte[] content = await _sharePoint.GetFileContentAsync(encodedSite, fileIdentifier, cancellationToken: cancellationToken);
-        return Encoding.UTF8.GetString(content);
-    }
-
-    private async Task<RfpAnalysis> AnalyzeRfpAsync(string rfpText, CancellationToken cancellationToken)
-    {
-        var deployment = RequireEnv("AZURE_OPENAI_DEPLOYMENT");
-        ChatClient chat = _openAi.GetChatClient(deployment);
-
-        var messages = new ChatMessage[]
-        {
-            new SystemChatMessage(
-                "You are a pre-sales analyst. Read the RFP and extract the requirements. " +
-                "Respond ONLY with a JSON object of the form " +
-                "{\"customer\": string, \"requiredCapabilities\": string[], \"recommendedSmes\": string[]}. " +
-                "Pick recommended subject-matter experts (SMEs) that best match the required capabilities " +
-                "(for example: 'AI Specialist', 'Security Architect', 'Data Platform Engineer')."),
-            new UserChatMessage(rfpText),
-        };
-
-        var options = new ChatCompletionOptions
-        {
-            ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat(),
-        };
-
-        ChatCompletion completion = await chat.CompleteChatAsync(messages, options, cancellationToken);
-        var json = completion.Content.Count > 0 ? completion.Content[0].Text : "{}";
-
-        var analysis = JsonSerializer.Deserialize<RfpAnalysis>(json, JsonOptions) ?? new RfpAnalysis();
-        analysis.Customer = string.IsNullOrWhiteSpace(analysis.Customer) ? "Unknown customer" : analysis.Customer;
-        return analysis;
+        return await _sharePoint.GetFileContentAsync(
+            encodedSite,
+            fileIdentifier,
+            cancellationToken: cancellationToken);
     }
 
     private async Task PostToTeamsAsync(RfpAnalysis analysis, string fileName, CancellationToken cancellationToken)
@@ -226,7 +197,7 @@ public class RfpFunctions
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 }
 
-/// <summary>Structured result returned by Azure OpenAI for an RFP.</summary>
+/// <summary>Structured result extracted from an RFP document.</summary>
 public class RfpAnalysis
 {
     public string Customer { get; set; } = string.Empty;
