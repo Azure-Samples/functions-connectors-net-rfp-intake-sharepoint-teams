@@ -50,6 +50,8 @@ flowchart LR
   2.75.0
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=macos%2Cisolated-process%2Cnode-v4%2Cpython-v2%2Chttp-trigger%2Ccontainer-apps&pivots=programming-language-csharp#install-the-azure-functions-core-tools)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite)
+  for local development.
 - [`jq`](https://jqlang.org/download/) (macOS and Linux only)
 - [`connector-namespace` Azure CLI extension](https://github.com/Azure/Connectors/tree/main/public-preview/connector-namespace-cli)
 - [Visual Studio Code](https://code.visualstudio.com/)
@@ -57,9 +59,9 @@ flowchart LR
 - RFPs with a `Customer`, `Client`, or `Organization` field and a numbered
   `Required Capabilities` section. The included sample demonstrates the
   expected structure.
-- A Microsoft Teams **team** and **public channel** to post to. Posting to
-  **private channels is not supported**. The Teams **Workflows** app must be
-  allowed in the
+- A Microsoft Teams **team** and **standard or private channel** to post to.
+  The deployed end-to-end workflow has been verified with a private channel.
+  The Teams **Workflows** app must be allowed in the
   [Teams admin center](https://admin.teams.microsoft.com/policies/manage-apps)
   (required by the card-posting action). See the
   [Microsoft Teams connector documentation](https://learn.microsoft.com/connectors/teams/?tabs=text1%2Cdotnet)
@@ -87,7 +89,7 @@ flowchart LR
    azd env new rfp-demo
    ```
 
-4. Provision resoures:
+4. Provision resources:
 
    ```pwsh
    azd provision
@@ -98,7 +100,7 @@ flowchart LR
    - **Azure Subscription** (`00000000-0000-0000-0000-000000000000`):
      subscription where the resources will be provisioned.
    - **Location** (`East US 2`): Azure region where resources will be
-     deployed.
+     deployed. Choose a region that supports Azure Document Intelligence.
    - **`SHAREPOINT_SITE_URL`**
      (`https://contoso.sharepoint.com/sites/RFPs`): SharePoint site that
      contains the document library to monitor.
@@ -115,6 +117,9 @@ authorization page, select **I have verified this request and trust the
 source**, then select **Allow access**. Connections that are already
 authenticated are skipped.
 
+To provision and deploy the complete application in one command, run `azd up`
+instead of running `azd provision` and `azd deploy` separately.
+
 ## Test locally
 
 ### Run the app locally
@@ -130,17 +135,13 @@ authenticated are skipped.
    To find your Teams team ID, list the teams you have joined:
 
    ```pwsh
-   az rest --method get \
-     --url "https://graph.microsoft.com/v1.0/me/joinedTeams" \
-     --query "value[].{name:displayName,teamId:id}" -o table
+   az rest --method get --url "https://graph.microsoft.com/v1.0/me/joinedTeams" --query "value[].{name:displayName,teamId:id}" -o table
    ```
 
    Then use the team ID to list its channels:
 
    ```pwsh
-   az rest --method get \
-     --url "https://graph.microsoft.com/v1.0/teams/<team-id>/channels" \
-     --query "value[].{name:displayName,channelId:id}" -o table
+   az rest --method get --url "https://graph.microsoft.com/v1.0/teams/<team-id>/channels" --query "value[].{name:displayName,channelId:id}" -o table
    ```
 
 2. Start Azurite in a separate terminal:
@@ -194,6 +195,8 @@ authenticated are skipped.
 ## Upload file
 
 1. Upload `sample-data/contoso-rfp.pdf` to the monitored SharePoint library.
+   Use a new file name if the sample was uploaded previously because the trigger
+   listens for newly created files.
 2. The function runs within the trigger's polling interval (~5 min).
 3. A **"New RFP received"** Adaptive Card appears in your Teams channel:
 
@@ -225,18 +228,28 @@ authenticated are skipped.
 
 ### Run automated tests
 
-Run the deterministic parser tests:
+Run the offline parser and SharePoint-content decoding tests:
 
 ```pwsh
 dotnet test tests/RfpApp.Tests/RfpApp.Tests.csproj --filter "Category!=Integration"
 ```
 
 To verify the included PDF against a live Document Intelligence account, sign
-in with `az login`, grant your identity the `Cognitive Services User` role, and
-run:
+in with `az login` and set the account endpoint. `azd provision` grants the
+provisioning identity the `Cognitive Services User` role. If you use a different
+account, grant that role before running the test.
+
+PowerShell:
 
 ```pwsh
 $env:DOCUMENT_INTELLIGENCE_ENDPOINT = "https://<resource>.cognitiveservices.azure.com/"
+dotnet test tests/RfpApp.Tests/RfpApp.Tests.csproj --filter "Category=Integration"
+```
+
+macOS or Linux:
+
+```sh
+export DOCUMENT_INTELLIGENCE_ENDPOINT="https://<resource>.cognitiveservices.azure.com/"
 dotnet test tests/RfpApp.Tests/RfpApp.Tests.csproj --filter "Category=Integration"
 ```
 
@@ -284,6 +297,9 @@ azd down --purge
   Teams connection runtime URLs and Azure Document Intelligence. It has an
   access policy on each connection and the `Cognitive Services User` role on
   the Document Intelligence account.
+- **Application Insights:** The Function worker uses the same managed identity
+  to export OpenTelemetry. Local authentication is disabled on the Application
+  Insights and Document Intelligence resources.
 - **Connector Namespace system managed identity:** Polls the SharePoint
   trigger and delivers callbacks.
 - **Callback authorization:** Uses the `connector_extension` system key on the
@@ -335,6 +351,8 @@ functions-connectors-net-rfp-intake-sharepoint-teams/
 ├── tests/
 │   └── RfpApp.Tests/
 │       ├── RfpAnalysisParserTests.cs
+│       ├── RfpDocumentAnalyzerIntegrationTests.cs
+│       ├── SharePointFileContentTests.cs
 │       └── RfpApp.Tests.csproj
 └── infra/
     ├── abbreviations.json
@@ -365,9 +383,14 @@ following:
   visibility is **Public**.
 - Ensure Azurite is running before starting the function locally and configuring
   the trigger.
+- Allow up to five minutes for the SharePoint trigger to detect a newly created
+  file. Each new test upload produces another Teams post.
 - Leave `AZURE_CLIENT_ID` empty in `local.settings.json` for local development.
   The Function App's managed identity client ID is only needed when running in
   Azure.
+- Confirm the Teams connection was authorized by a user who can access the
+  destination team and channel. Private channels are supported when that user
+  is a channel member.
 - Confirm the uploaded file is in a
   [format supported by the `prebuilt-layout` model](https://learn.microsoft.com/azure/ai-services/document-intelligence/prebuilt/layout?view=doc-intel-4.0.0#input-requirements).
 - Confirm the RFP contains a numbered `Required Capabilities` section. The
