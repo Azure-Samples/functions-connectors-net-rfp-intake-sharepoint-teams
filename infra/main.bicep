@@ -59,8 +59,8 @@ var appInsightsName = '${abbrs.insightsComponents}${resourceToken}'
 var connectorNamespaceName = '${abbrs.connectorNamespaces}${resourceToken}'
 var sharepointConnectionName = '${abbrs.connectorNamespacesConnections}sp-${resourceToken}'
 var teamsConnectionName = '${abbrs.connectorNamespacesConnections}teams-${resourceToken}'
-// Keep a service discriminator so existing OpenAI-based environments do not
-// attempt an unsupported in-place Cognitive Services account kind change.
+// Keep a service discriminator to prevent unsupported in-place account kind
+// changes when upgrading existing Cognitive Services environments.
 var documentIntelligenceName = '${abbrs.cognitiveServicesAccounts}di-${resourceToken}'
 
 var deploymentStorageContainerName = 'app-package-${take(functionAppName, 32)}-${take(toLower(uniqueString(functionAppName, environmentName)), 7)}'
