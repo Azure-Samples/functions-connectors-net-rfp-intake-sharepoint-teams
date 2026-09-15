@@ -8,9 +8,6 @@
     "location": {
       "value": "${AZURE_LOCATION}"
     },
-    "connectorNamespaceLocation": {
-      "value": "${CONNECTOR_NAMESPACE_LOCATION=westcentralus}"
-    },
     "documentIntelligenceLocation": {
       "value": "${DOCUMENT_INTELLIGENCE_LOCATION=eastus}"
     },

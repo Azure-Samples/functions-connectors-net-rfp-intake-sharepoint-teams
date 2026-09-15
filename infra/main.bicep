@@ -10,11 +10,8 @@ param environmentName string
     type: 'location'
   }
 })
-@description('Location for all resources except the Connector Namespace.')
+@description('Location for all resources except the Azure Document Intelligence account.')
 param location string
-
-@description('Region for the Connector Namespace. Override via CONNECTOR_NAMESPACE_LOCATION if needed.')
-param connectorNamespaceLocation string = 'westcentralus'
 
 @description('Location for the Azure Document Intelligence account. Override via DOCUMENT_INTELLIGENCE_LOCATION if needed.')
 param documentIntelligenceLocation string = 'eastus'
@@ -192,7 +189,7 @@ module connectorNamespace './connectorNamespace.bicep' = {
   name: connectorNamespaceName
   params: {
     name: connectorNamespaceName
-    location: connectorNamespaceLocation
+    location: location
     tags: tags
     sharepointConnectionName: sharepointConnectionName
     teamsConnectionName: teamsConnectionName
