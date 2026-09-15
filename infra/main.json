@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "4654576927772830452"
+      "templateHash": "12080465063068224321"
     },
     "name": "RFP intake: SharePoint -> Document Intelligence -> Teams (.NET)",
     "description": "Connector Namespace trigger sample that reads an RFP from SharePoint, extracts its layout with Azure Document Intelligence, applies deterministic routing rules, and posts an Adaptive Card to Teams. System-key auth on the callback URL (no built-in auth)."
@@ -26,14 +26,7 @@
         "azd": {
           "type": "location"
         },
-        "description": "Location for all resources except the Azure Document Intelligence account."
-      }
-    },
-    "documentIntelligenceLocation": {
-      "type": "string",
-      "defaultValue": "eastus",
-      "metadata": {
-        "description": "Location for the Azure Document Intelligence account. Override via DOCUMENT_INTELLIGENCE_LOCATION if needed."
+        "description": "Location for all resources."
       }
     },
     "userPrincipalId": {
@@ -13820,7 +13813,7 @@
             "value": "[variables('documentIntelligenceName')]"
           },
           "location": {
-            "value": "[parameters('documentIntelligenceLocation')]"
+            "value": "[parameters('location')]"
           },
           "tags": {
             "value": "[variables('tags')]"

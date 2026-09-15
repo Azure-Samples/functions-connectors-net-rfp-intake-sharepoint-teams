@@ -10,11 +10,8 @@ param environmentName string
     type: 'location'
   }
 })
-@description('Location for all resources except the Azure Document Intelligence account.')
+@description('Location for all resources.')
 param location string
-
-@description('Location for the Azure Document Intelligence account. Override via DOCUMENT_INTELLIGENCE_LOCATION if needed.')
-param documentIntelligenceLocation string = 'eastus'
 
 metadata name = 'RFP intake: SharePoint -> Document Intelligence -> Teams (.NET)'
 metadata description = 'Connector Namespace trigger sample that reads an RFP from SharePoint, extracts its layout with Azure Document Intelligence, applies deterministic routing rules, and posts an Adaptive Card to Teams. System-key auth on the callback URL (no built-in auth).'
@@ -204,7 +201,7 @@ module documentIntelligence './documentIntelligence.bicep' = {
   name: documentIntelligenceName
   params: {
     name: documentIntelligenceName
-    location: documentIntelligenceLocation
+    location: location
     tags: tags
     functionAppPrincipalId: funcUserAssignedIdentity.outputs.principalId
     userPrincipalId: userPrincipalId

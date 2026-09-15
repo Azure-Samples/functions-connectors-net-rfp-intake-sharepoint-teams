@@ -8,9 +8,6 @@
     "location": {
       "value": "${AZURE_LOCATION}"
     },
-    "documentIntelligenceLocation": {
-      "value": "${DOCUMENT_INTELLIGENCE_LOCATION=eastus}"
-    },
     "userPrincipalId": {
       "value": "${AZURE_PRINCIPAL_ID}"
     },
