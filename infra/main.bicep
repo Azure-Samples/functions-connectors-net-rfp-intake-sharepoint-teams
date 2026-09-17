@@ -10,19 +10,26 @@ param environmentName string
     type: 'location'
   }
 })
-@description('Location for all resources except the Connector Namespace.')
+@allowed([
+  'australiaeast'
+  'eastus'
+  'eastus2'
+  'japaneast'
+  'southcentralus'
+  'southeastasia'
+  'swedencentral'
+  'uksouth'
+  'westeurope'
+  'westus'
+  'westus3'
+])
+@description('Location for all resources. Must support Azure Content Understanding.')
 param location string
 
-@description('Region for the Connector Namespace. Override via CONNECTOR_NAMESPACE_LOCATION if needed.')
-param connectorNamespaceLocation string = 'westcentralus'
+metadata name = 'RFP intake: SharePoint -> Content Understanding -> Teams (.NET)'
+metadata description = 'Connector Namespace trigger sample that reads an RFP from SharePoint, extracts its layout with Azure Content Understanding, applies deterministic routing rules, and posts an Adaptive Card to Teams. System-key auth on the callback URL (no built-in auth).'
 
-@description('Location for the Azure OpenAI account. Override via AZURE_OPENAI_LOCATION if needed.')
-param openAiLocation string = 'eastus'
-
-metadata name = 'RFP intake: SharePoint -> Azure OpenAI -> Teams (.NET)'
-metadata description = 'Connector Namespace trigger sample that reads an RFP from SharePoint, extracts requirements with Azure OpenAI, and posts an Adaptive Card to Teams. System-key auth on the callback URL (no built-in auth).'
-
-@description('Id of the user identity to be used for testing and debugging. Granted access to the connections + OpenAI so the same code can be debugged locally with `az login`.')
+@description('Id of the user identity to be used for testing and debugging. Granted access to the connections + Content Understanding so the same code can be debugged locally with `az login`.')
 @metadata({
   azd: {
     type: 'principalId'
@@ -45,9 +52,6 @@ param teamsTeamId string
 @description('Microsoft Teams channel ID to post the RFP summary card to.')
 param teamsChannelId string
 
-@description('Azure OpenAI chat model deployment name.')
-param openAiDeploymentName string = 'gpt-5.4-mini'
-
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var tags = { 'azd-env-name': environmentName }
@@ -62,7 +66,9 @@ var appInsightsName = '${abbrs.insightsComponents}${resourceToken}'
 var connectorNamespaceName = '${abbrs.connectorNamespaces}${resourceToken}'
 var sharepointConnectionName = '${abbrs.connectorNamespacesConnections}sp-${resourceToken}'
 var teamsConnectionName = '${abbrs.connectorNamespacesConnections}teams-${resourceToken}'
-var openAiName = '${abbrs.cognitiveServicesAccounts}${resourceToken}'
+// Keep a service discriminator to prevent unsupported in-place account kind
+// changes when upgrading existing Cognitive Services environments.
+var contentUnderstandingName = '${abbrs.cognitiveServicesAccounts}cu-${resourceToken}'
 
 var deploymentStorageContainerName = 'app-package-${take(functionAppName, 32)}-${take(toLower(uniqueString(functionAppName, environmentName)), 7)}'
 var storageBlobDataOwner = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
@@ -193,7 +199,7 @@ module connectorNamespace './connectorNamespace.bicep' = {
   name: connectorNamespaceName
   params: {
     name: connectorNamespaceName
-    location: connectorNamespaceLocation
+    location: location
     tags: tags
     sharepointConnectionName: sharepointConnectionName
     teamsConnectionName: teamsConnectionName
@@ -202,15 +208,14 @@ module connectorNamespace './connectorNamespace.bicep' = {
   }
 }
 
-// Azure OpenAI account + chat deployment + role assignments.
-module openAi './openai.bicep' = {
+// Microsoft Foundry resource for Content Understanding + role assignments.
+module contentUnderstanding './contentUnderstanding.bicep' = {
   scope: rg
-  name: openAiName
+  name: contentUnderstandingName
   params: {
-    name: openAiName
-    location: openAiLocation
+    name: contentUnderstandingName
+    location: location
     tags: tags
-    deploymentName: openAiDeploymentName
     functionAppPrincipalId: funcUserAssignedIdentity.outputs.principalId
     userPrincipalId: userPrincipalId
   }
@@ -230,8 +235,7 @@ var allAppSettings = {
   TEAMS_CHANNEL_ID: teamsChannelId
   TEAMS_POST_AS: 'Flow bot'
   TEAMS_POST_IN: 'Channel'
-  AZURE_OPENAI_ENDPOINT: openAi.outputs.endpoint
-  AZURE_OPENAI_DEPLOYMENT: openAi.outputs.deploymentName
+  CONTENT_UNDERSTANDING_ENDPOINT: contentUnderstanding.outputs.endpoint
 }
 
 module functionApp 'br/public:avm/res/web/site:0.22.0' = {
@@ -299,8 +303,17 @@ output connectorNamespaceName string = connectorNamespace.outputs.name
 @description('The name of the created SharePoint connection on the Connector Namespace.')
 output sharepointConnectionName string = connectorNamespace.outputs.sharepointConnectionName
 
+@description('Runtime URL for the SharePoint connection.')
+output sharepointConnectionRuntimeUrl string = connectorNamespace.outputs.sharepointConnectionRuntimeUrl
+
 @description('The name of the created Teams connection on the Connector Namespace.')
 output teamsConnectionName string = connectorNamespace.outputs.teamsConnectionName
+
+@description('Runtime URL for the Teams connection.')
+output teamsConnectionRuntimeUrl string = connectorNamespace.outputs.teamsConnectionRuntimeUrl
+
+@description('Endpoint for the Microsoft Foundry resource used by Content Understanding.')
+output contentUnderstandingEndpoint string = contentUnderstanding.outputs.endpoint
 
 @description('SharePoint site URL that contains the RFP library.')
 output sharepointSiteUrl string = sharepointSiteUrl
