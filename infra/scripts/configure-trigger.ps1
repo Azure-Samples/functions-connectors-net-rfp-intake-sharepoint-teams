@@ -86,7 +86,7 @@ if ($Target -eq 'Local') {
     }
 
     $connectorExtensionKey = Get-LocalConnectorExtensionKey
-    $callbackUrl = "$callbackBase/runtime/webhooks/connector?functionName=$functionName&code=$([uri]::EscapeDataString($connectorExtensionKey))"
+    $callbackUrl = "$callbackBase/runtime/webhooks/connector?functionName=$functionName"
     $metadata = "{destinationType:functionApp,functionName:$functionName,recurrenceFrequency:Minute,recurrenceInterval:'5'}"
 }
 else {
@@ -102,7 +102,7 @@ else {
         throw "Could not fetch the connector_extension system key from '$functionAppName'."
     }
 
-    $callbackUrl = "https://$functionAppName.azurewebsites.net/runtime/webhooks/connector?functionName=$functionName&code=$connectorExtensionKey"
+    $callbackUrl = "https://$functionAppName.azurewebsites.net/runtime/webhooks/connector?functionName=$functionName"
     $metadata = "{destinationType:functionApp,functionAppName:$functionAppName,functionAppResourceGroup:$resourceGroupName,functionAppSubscriptionId:$subscriptionId,functionName:$functionName,recurrenceFrequency:Minute,recurrenceInterval:'5'}"
 }
 
@@ -115,7 +115,14 @@ $triggerParameters += "]"
 $notificationFile = Join-Path `
     ([System.IO.Path]::GetTempPath()) `
     "connector-notification-details-$([System.Guid]::NewGuid().ToString('N')).json"
-@{ callbackUrl = $callbackUrl } | ConvertTo-Json -Compress | Set-Content -Path $notificationFile -NoNewline
+@{
+    callbackUrl = $callbackUrl
+    authentication = @{
+        type = "QueryString"
+        name = "code"
+        value = $connectorExtensionKey
+    }
+} | ConvertTo-Json -Depth 3 -Compress | Set-Content -Path $notificationFile -NoNewline
 
 try {
     az connector-namespace trigger delete `
@@ -155,5 +162,5 @@ finally {
 
 Write-Host "SharePoint trigger now targets $Target." -ForegroundColor Green
 if ($Target -eq 'Local') {
-    Write-Host "Callback: $callbackBase/runtime/webhooks/connector?functionName=$functionName&code=<redacted>" -ForegroundColor Cyan
+    Write-Host "Callback: $callbackUrl" -ForegroundColor Cyan
 }
