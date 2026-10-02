@@ -109,8 +109,7 @@ if [ "$target" = local ]; then
         exit 1
     fi
 
-    encoded_key=$(jq -nr --arg value "$connector_extension_key" '$value|@uri')
-    callback_url="$callback_base/runtime/webhooks/connector?functionName=$function_name&code=$encoded_key"
+    callback_url="$callback_base/runtime/webhooks/connector?functionName=$function_name"
     metadata="{destinationType:functionApp,functionName:$function_name,recurrenceFrequency:Minute,recurrenceInterval:'5'}"
     target_label=Local
 else
@@ -127,8 +126,7 @@ else
         exit 1
     fi
 
-    encoded_key=$(jq -nr --arg value "$connector_extension_key" '$value|@uri')
-    callback_url="https://$function_app_name.azurewebsites.net/runtime/webhooks/connector?functionName=$function_name&code=$encoded_key"
+    callback_url="https://$function_app_name.azurewebsites.net/runtime/webhooks/connector?functionName=$function_name"
     metadata="{destinationType:functionApp,functionAppName:$function_app_name,functionAppResourceGroup:$resource_group_name,functionAppSubscriptionId:$subscription_id,functionName:$function_name,recurrenceFrequency:Minute,recurrenceInterval:'5'}"
     target_label=Azure
 fi
@@ -140,7 +138,8 @@ fi
 trigger_parameters="$trigger_parameters]"
 
 notification_file=$(mktemp "${TMPDIR:-/tmp}/connector-notification-details.XXXXXX.json")
-jq -cn --arg callbackUrl "$callback_url" '{callbackUrl: $callbackUrl}' >"$notification_file"
+jq -cn --arg callbackUrl "$callback_url" --arg key "$connector_extension_key" \
+    '{callbackUrl: $callbackUrl, authentication: {type: "QueryString", name: "code", value: $key}}' >"$notification_file"
 
 az connector-namespace trigger delete \
     -g "$resource_group_name" --namespace "$connector_namespace_name" \
@@ -160,6 +159,5 @@ az connector-namespace trigger create \
 
 printf "SharePoint trigger now targets %s.\n" "$target_label"
 if [ "$target" = local ]; then
-    printf "Callback: %s/runtime/webhooks/connector?functionName=%s&code=<redacted>\n" \
-        "$callback_base" "$function_name"
+    printf "Callback: %s\n" "$callback_url"
 fi
