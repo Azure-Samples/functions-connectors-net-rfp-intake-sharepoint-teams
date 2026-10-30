@@ -109,6 +109,12 @@ no inbound callback, system key, or dev tunnel is required.
    Trigger Config name, for optional local development. The deployed Function
    App receives the same Poll settings and uses its managed identity.
 
+   Polling provisions **one always-ready 2,048-MB instance** for
+   `OnNewFilePoll`, following the
+   [SharePoint polling sample](https://github.com/Azure-Samples/functions-connectors-net/tree/main/sharepointApp/polling).
+   This keeps an outbound Poll listener running and incurs idle charges.
+   Do not assume Poll delivery will wake this app from zero instances.
+
 6. Upload `sample-data/contoso-rfp.pdf` to the monitored SharePoint library.
    Use a new file name if the sample was uploaded previously because the trigger
    listens for newly created files.

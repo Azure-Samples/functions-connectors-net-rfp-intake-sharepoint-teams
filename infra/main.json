@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "13121445055539482197"
+      "templateHash": "11198020330193586224"
     },
     "name": "RFP intake: SharePoint -> Content Understanding -> Teams (.NET)",
     "description": "Connector Namespace Poll trigger sample that reads an RFP from SharePoint, extracts its layout with Azure Content Understanding, applies deterministic routing rules, and posts an Adaptive Card to Teams. Managed identity authentication with no public callback."
@@ -14053,7 +14053,13 @@
               },
               "scaleAndConcurrency": {
                 "instanceMemoryMB": 2048,
-                "maximumInstanceCount": 100
+                "maximumInstanceCount": 100,
+                "alwaysReady": [
+                  {
+                    "name": "function:OnNewFilePoll",
+                    "instanceCount": 1
+                  }
+                ]
               },
               "runtime": {
                 "name": "dotnet-isolated",
