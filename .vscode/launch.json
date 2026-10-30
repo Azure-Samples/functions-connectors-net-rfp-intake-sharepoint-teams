@@ -5,8 +5,7 @@
       "name": "Attach to .NET Functions",
       "type": "coreclr",
       "request": "attach",
-      "processId": "${command:azureFunctions.pickProcess}",
-      "preLaunchTask": "func: host start"
+      "processId": "${command:azureFunctions.pickProcess}"
     }
   ]
 }

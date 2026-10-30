@@ -57,13 +57,23 @@
     },
     {
       "label": "func: host start",
-      "type": "func",
-      "command": "host start",
+      "type": "shell",
+      "command": "dotnet build && cd bin${pathSeparator}Debug${pathSeparator}net10.0 && func host start --dotnet-isolated-debug --enable-json-output --enableAuth",
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOn": "build",
+      "windows": {
+        "options": {
+          "shell": {
+            "executable": "cmd.exe",
+            "args": ["/d", "/c"]
+          }
+        }
+      },
       "isBackground": true,
+      "presentation": {
+        "panel": "dedicated"
+      },
       "problemMatcher": "$func-dotnet-watch"
     }
   ]

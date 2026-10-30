@@ -247,9 +247,10 @@ signed-in developer.
    gateway ID exactly. Do not commit either value.
 
 4. In VS Code, set a breakpoint in `OnNewFilePoll` or
-   `ProcessNewFilesAsync`, then press **F5** and select the .NET Functions
-   worker process when prompted. The launch configuration follows the standard
-   Azure Functions isolated-worker attach flow.
+   `ProcessNewFilesAsync`, then press **F5**. VS Code builds the app, starts
+   the authenticated Functions host from the build output, and automatically
+   attaches to the isolated .NET worker. Build and host startup share one
+   terminal task; stopping debugging also stops the local host.
 
 5. Upload a newly named copy of `sample-data/contoso-rfp.pdf` to SharePoint.
    Connector Namespace leases the event to the local host. Continuing from the
