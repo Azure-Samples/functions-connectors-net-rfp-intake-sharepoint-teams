@@ -12,6 +12,8 @@ and the
 uses two connections, SharePoint Online and Microsoft Teams, created in an
 [Azure Connector Namespace](https://learn.microsoft.com/azure/connector-namespace/connector-namespace-overview),
 and leverages the function app's managed identity for authentication.
+The Function host receives events through Poll delivery, locally and in Azure;
+no inbound callback, system key, or dev tunnel is required.
 
 ![Architecture diagram](docs/images/architecture.svg)
 
@@ -27,8 +29,7 @@ and leverages the function app's managed identity for authentication.
   for local development.
 - [`jq`](https://jqlang.org/download/) (macOS and Linux only)
 - [`connector-namespace` Azure CLI extension](https://github.com/Azure/Connectors/tree/main/public-preview/connector-namespace-cli)
-- [Visual Studio Code](https://code.visualstudio.com/) for local development
-  with a dev tunnel.
+- [Visual Studio Code](https://code.visualstudio.com/) for local development.
 - A SharePoint site + document library to receive RFPs.
 - RFPs with a `Customer`, `Client`, or `Organization` field and a numbered
   `Required Capabilities` section. The included sample demonstrates the
@@ -76,8 +77,8 @@ and leverages the function app's managed identity for authentication.
    az rest --method get --url "https://graph.microsoft.com/v1.0/teams/<team-id>/channels" --query "value[].{name:displayName,channelId:id}" -o table
    ```
 
-5. Provision the resources, deploy the Function App, authorize both connector
-   connections, and configure the SharePoint trigger:
+5. Provision the resources, including the enabled SharePoint Poll Trigger
+   Config, authorize both connector connections, and deploy the Function App:
 
    ```pwsh
    azd up
@@ -104,7 +105,15 @@ and leverages the function app's managed identity for authentication.
    the SharePoint and Teams OAuth consent flows. On each page, select **I have
    verified this request and trust the source**, then select **Allow access**.
    Connections that are already authenticated are skipped. The post-provision
-   hook then generates `local.settings.json` for optional local development.
+   hook then generates `local.settings.json`, including the Poll endpoint and
+   Trigger Config name, for optional local development. The deployed Function
+   App receives the same Poll settings and uses its managed identity.
+
+   Polling provisions **one always-ready 2,048-MB instance** for
+   `OnNewFilePoll`, following the
+   [SharePoint polling sample](https://github.com/Azure-Samples/functions-connectors-net/tree/main/sharepointApp/polling).
+   This keeps an outbound Poll listener running and incurs idle charges.
+   Do not assume Poll delivery will wake this app from zero instances.
 
 6. Upload `sample-data/contoso-rfp.pdf` to the monitored SharePoint library.
    Use a new file name if the sample was uploaded previously because the trigger
@@ -173,11 +182,34 @@ Local execution still uses the connector connections and Content Understanding
 resource provisioned in Azure. If you haven't run `azd up`, run `azd provision`
 and complete both connector consent flows first.
 
+### Poll delivery
+
+`OnNewFilePoll` uses host-pull Poll delivery through the
+`Microsoft.Azure.Functions.Worker.Extensions.Connector` package from nuget.org;
+no custom package feed is required:
+
+```csharp
+[ConnectorTrigger(
+    DeliveryMode = ConnectorTriggerDeliveryMode.Poll,
+    Connection = "ConnectorNamespace",
+    TriggerConfigName = "%OnNewFilePollTriggerConfigName%",
+    MaxConcurrentCalls = 1)]
+ConnectorEvent<SharePointOnlineOnNewFileItemsTriggerPayload> connectorEvent
+```
+
+Poll delivery does not require a callback URL, Function system key, public
+port, or dev tunnel. The local identity calls the Connector Namespace Poll
+runtime directly. Its SharePoint connection access policy must authorize the
+signed-in developer.
+
 1. The post-provision hook creates `local.settings.json` from the current azd
    deployment outputs, filling in the connector runtime URLs, SharePoint site,
    Teams destination, and Content Understanding endpoint. It leaves
    `AZURE_CLIENT_ID` empty so `DefaultAzureCredential` uses your local Azure
    sign-in instead of the Function App's managed identity.
+   It also supplies `ConnectorNamespace__pollingEndpoint` and
+   `OnNewFilePollTriggerConfigName` from the provisioned Poll Trigger Config.
+   Do not add managed-identity credential selectors to the local settings.
 
    To regenerate the file after changing environments or provisioning values,
    run:
@@ -198,53 +230,51 @@ and complete both connector consent flows first.
    azurite --silent --location ~/.azurite/connectors-sample
    ```
 
-3. Start the app with authentication enabled:
+   Alternatively, use the provisioned storage account with your signed-in
+   developer identity by replacing `AzureWebJobsStorage` with:
+
+   ```json
+   {
+     "AzureWebJobsStorage__accountName": "<storage-account-name>"
+   }
+   ```
+
+   The provisioning identity already has the required blob, queue, and table
+   data roles.
+
+3. If the deployed Function App is running, stop it while testing locally so
+   it does not consume events intended for your local host:
 
    ```pwsh
-   func start --enableAuth
+   az functionapp stop --resource-group "$(azd env get-value resourceGroupName)" --name "$(azd env get-value functionAppName)"
    ```
 
-   Always use `--enableAuth` when exposing the app through a dev tunnel.
-   Without it, the function endpoint is unauthenticated on the public internet.
+4. In VS Code, set a breakpoint in `OnNewFilePoll` or
+   `ProcessNewFilesAsync`, then press **F5**. VS Code builds the app, starts
+   the local Functions host from the build output, and automatically
+   attaches to the isolated .NET worker. Build and host startup share one
+   terminal task; stopping debugging also stops the local host.
 
-4. In VS Code, open the **Ports** view, select **Forward a Port**, and enter
-   `7071`.
-5. Copy the generated **Forwarded Address**, such as
-   `https://<id>-7071.uks1.devtunnels.ms`. Right-click port `7071`, select
-   **Port Visibility → Public**, and confirm the warning.
-6. Point the SharePoint trigger to the local Function host.
+5. Upload a newly named copy of `sample-data/contoso-rfp.pdf` to SharePoint.
+   Connector Namespace leases the event to the local host. Continuing from the
+   breakpoint fetches the file, analyzes it, and posts the Teams card.
 
-   On macOS or Linux:
+Local and deployed hosts share one Poll Trigger Config. If both run at once,
+they compete for leased events; an upload is not broadcast to both hosts.
+When finished, stop debugging and restart the deployed Function App:
 
-   ```sh
-   sh ./infra/scripts/configure-trigger.sh \
-     --target local \
-     --callback-base-url "https://<id>-7071.uks1.devtunnels.ms"
-   ```
-
-   On Windows:
-
-   ```powershell
-   pwsh ./infra/scripts/configure-trigger.ps1 `
-     -Target Local `
-     -CallbackBaseUrl "https://<id>-7071.uks1.devtunnels.ms"
-   ```
-
-7. Upload a newly named copy of `sample-data/contoso-rfp.pdf` to SharePoint.
-   The trigger polls every five minutes and sends the callback through the
-   public dev tunnel. Rerun the configuration command whenever the forwarded
-   address changes.
-
-To return the trigger to the deployed Function App, run `azd deploy`. The
-`postdeploy` hook recreates the trigger with the Azure callback URL.
+```pwsh
+az functionapp start --resource-group "$(azd env get-value resourceGroupName)" --name "$(azd env get-value functionAppName)"
+```
 
 ## How the workflow works
 
 1. **RFP arrives.** A file is uploaded to the monitored SharePoint document
    library.
-2. **Trigger.** The Connector Namespace polls the SharePoint **"When a file
-   is created"** trigger (`GetOnNewFileItems`) and calls the function's
-   `OnNewFile` callback. The trigger returns properties only, so the content
+2. **Trigger.** The Connector Namespace runs the SharePoint **"When a file is
+   created"** operation (`GetOnNewFileItems`). The local or deployed
+   `OnNewFilePoll` Function host receives a leased event over an outbound
+   connection. The trigger returns properties only, so the content
    must be fetched separately.
 3. **Fetch content.** The function calls the SharePoint **"Get file content"**
    action (`SharePointOnlineClient.GetFileContentAsync`) with the file
@@ -261,6 +291,19 @@ To return the trigger to the deployed Function App, run `azd deploy`. The
    (`TeamsClient.PostCardToConversationAsync`).
 
 ## Upgrade or clean up
+
+If upgrading an environment that used the previous Webhook version, incremental
+ARM deployment retains its old Webhook Trigger Config. Remove that obsolete
+configuration before testing the Poll-only app; the previous sample named it
+`<sharepoint-connection-name>-onnewfile`:
+
+```pwsh
+az connector-namespace trigger delete --resource-group <resource-group> --namespace <namespace-name> --name <old-webhook-trigger-name> --yes
+```
+
+Run `azd up` to provision the Poll Trigger Config and deploy the updated app.
+Regenerate an existing `local.settings.json` with the `--force` / `-Force`
+option shown above so it receives the provisioned Poll settings.
 
 If you previously provisioned an Azure OpenAI or standalone Document
 Intelligence version of this sample into the same azd environment, incremental
@@ -287,22 +330,26 @@ azd down --purge
 
 ## How auth works (no secrets)
 
-- **Function-app user-assigned managed identity:** Calls the SharePoint and
-  Teams connection runtime URLs and Azure Content Understanding. It has an
+- **Function-app user-assigned managed identity:** Receives and acknowledges
+  Poll events, calls the SharePoint and Teams connection runtime URLs, and
+  accesses Azure Content Understanding. It has an
   access policy on each connection and the `Cognitive Services User` role on
   the Microsoft Foundry resource.
 - **Application Insights:** The Function worker uses the same managed identity
   to export OpenTelemetry. Local authentication is disabled on the Application
   Insights and Microsoft Foundry resources.
 - **Connector Namespace system managed identity:** Polls the SharePoint
-  trigger and delivers callbacks.
-- **Callback authorization:** Uses the `connector_extension` system key on the
-  callback URL. This sample does not use App Service built-in authentication.
+  connector operation.
+- **Local developer identity:** Calls the Poll runtime and the SharePoint and
+  Teams connection runtime URLs. It requires a connection-level access policy.
+- **Outbound delivery:** Poll requests use identity authentication. No callback
+  URL, Function system key, port forwarding, or dev tunnel is required.
 
 ## Deployment scripts
 
-The scripts in `infra/scripts` complete setup that cannot be handled entirely by
-the Bicep deployment:
+Bicep creates the enabled SharePoint Poll Trigger Config and configures the
+Function App's Poll endpoint, Trigger Config name, and managed identity.
+The scripts in `infra/scripts` complete authorization and local setup:
 
 - **`authorize-connections.ps1` / `.sh`:** Opens the OAuth consent flow and
   waits for the SharePoint and Teams connections to become authenticated.
@@ -314,28 +361,24 @@ the Bicep deployment:
 - **`postprovision.ps1` / `.sh`:** Runs connector authorization and local
   settings generation. `azd provision` invokes this platform-specific script
   through the `postprovision` hook.
-- **`configure-trigger.ps1` / `.sh`:** Creates the SharePoint new-file trigger
-  and points it to a local dev tunnel or the deployed Function App. It adds the
-  `connector_extension` system key to the callback URL. This script runs after
-  the function is available because the callback URL and key are not known
-  earlier. Changing targets requires the trigger to be deleted and recreated.
-- **`postdeploy.ps1` / `.sh`:** Configures the trigger for Azure and checks
-  both connection authorizations. `azd deploy` runs the platform-specific
-  script through the `postdeploy` hook, replacing any local callback with the
-  deployed Function App callback.
 
 ## Troubleshooting
 
 If the summary card is not posted to the specified Teams channel, check the
 following:
 
-- In the Connector Namespace portal, verify that the SharePoint trigger's
-  callback URL points to the intended local dev tunnel or deployed Function App
-  and includes the correct `connector_extension` access key.
-- For local testing, verify that port `7071` is forwarded and the dev tunnel
-  visibility is **Public**.
-- Ensure Azurite is running before starting the function locally and configuring
-  the trigger.
+- Verify that the Trigger Config has `deliveryMode: Poll`,
+  is enabled, and that `ConnectorNamespace__pollingEndpoint` and
+  `OnNewFilePollTriggerConfigName` resolve in `local.settings.json`.
+- Confirm that both the Connector Namespace identity and the signed-in local
+  developer have connection-level access policies on the SharePoint
+  connection.
+- For Azure, verify that `ConnectorNamespace__credential` is `managedidentity`
+  and `ConnectorNamespace__clientId` selects the Function App's user-assigned
+  identity.
+- When testing locally, stop the deployed Function App to prevent it consuming
+  the same Poll events.
+- Ensure Azurite is running before starting the function locally.
 - Allow up to five minutes for the SharePoint trigger to detect a newly created
   file. Each new test upload produces another Teams post.
 - Leave `AZURE_CLIENT_ID` empty in `local.settings.json` for local development.

@@ -21,6 +21,8 @@ $requiredValues = @{
     teamsTeamId = $outputs.TEAMS_TEAM_ID
     teamsChannelId = $outputs.TEAMS_CHANNEL_ID
     contentUnderstandingEndpoint = $outputs.contentUnderstandingEndpoint
+    connectorNamespacePollingEndpoint = $outputs.connectorNamespacePollingEndpoint
+    sharepointPollTriggerConfigName = $outputs.sharepointPollTriggerConfigName
 }
 
 $missingValues = $requiredValues.GetEnumerator() |
@@ -37,6 +39,8 @@ $settings = [ordered]@{
         AzureWebJobsStorage = 'UseDevelopmentStorage=true'
         FUNCTIONS_WORKER_RUNTIME = 'dotnet-isolated'
         AZURE_CLIENT_ID = ''
+        ConnectorNamespace__pollingEndpoint = $requiredValues.connectorNamespacePollingEndpoint
+        OnNewFilePollTriggerConfigName = $requiredValues.sharepointPollTriggerConfigName
         SHAREPOINTONLINE_CONNECTION_RUNTIME_URL = $requiredValues.sharepointConnectionRuntimeUrl
         SHAREPOINT_SITE_URL = $requiredValues.sharepointSiteUrl
         TEAMS_CONNECTION_RUNTIME_URL = $requiredValues.teamsConnectionRuntimeUrl

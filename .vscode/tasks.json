@@ -56,29 +56,25 @@
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "host start",
+      "label": "func: host start",
       "type": "shell",
-      "command": "dotnet run --enableAuth",
+      "command": "dotnet build && cd bin${pathSeparator}Debug${pathSeparator}net10.0 && func host start --dotnet-isolated-debug --enable-json-output",
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "isBackground": true,
-      "problemMatcher": {
-        "owner": "azureFunctions",
-        "pattern": [
-          {
-            "regexp": "\\b\\B",
-            "file": 1,
-            "location": 2,
-            "message": 3
+      "windows": {
+        "options": {
+          "shell": {
+            "executable": "cmd.exe",
+            "args": ["/d", "/c"]
           }
-        ],
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "^.*(Determining projects to restore|Building|Found .*\\.csproj).*$",
-          "endsPattern": "^.*(Host lock lease acquired|Worker process started and initialized|Job host started).*$"
         }
-      }
+      },
+      "isBackground": true,
+      "presentation": {
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$func-dotnet-watch"
     }
   ]
 }

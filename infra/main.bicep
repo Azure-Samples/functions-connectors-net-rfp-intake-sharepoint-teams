@@ -27,7 +27,7 @@ param environmentName string
 param location string
 
 metadata name = 'RFP intake: SharePoint -> Content Understanding -> Teams (.NET)'
-metadata description = 'Connector Namespace trigger sample that reads an RFP from SharePoint, extracts its layout with Azure Content Understanding, applies deterministic routing rules, and posts an Adaptive Card to Teams. System-key auth on the callback URL (no built-in auth).'
+metadata description = 'Connector Namespace Poll trigger sample that reads an RFP from SharePoint, extracts its layout with Azure Content Understanding, applies deterministic routing rules, and posts an Adaptive Card to Teams. Managed identity authentication with no public callback.'
 
 @description('Id of the user identity to be used for testing and debugging. Granted access to the connections + Content Understanding so the same code can be debugged locally with `az login`.')
 @metadata({
@@ -203,6 +203,9 @@ module connectorNamespace './connectorNamespace.bicep' = {
     tags: tags
     sharepointConnectionName: sharepointConnectionName
     teamsConnectionName: teamsConnectionName
+    sharepointSiteUrl: sharepointSiteUrl
+    sharepointLibraryName: sharepointLibraryName
+    sharepointFolderPath: sharepointFolderPath
     functionAppPrincipalId: funcUserAssignedIdentity.outputs.principalId
     userPrincipalId: userPrincipalId
   }
@@ -228,6 +231,10 @@ var allAppSettings = {
   APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'ClientId=${funcUserAssignedIdentity.outputs.clientId};Authorization=AAD'
   APPLICATIONINSIGHTS_CONNECTION_STRING: monitoring.outputs.connectionString
   AZURE_CLIENT_ID: funcUserAssignedIdentity.outputs.clientId
+  ConnectorNamespace__pollingEndpoint: connectorNamespace.outputs.pollingEndpoint
+  ConnectorNamespace__credential: 'managedidentity'
+  ConnectorNamespace__clientId: funcUserAssignedIdentity.outputs.clientId
+  OnNewFilePollTriggerConfigName: connectorNamespace.outputs.sharepointPollTriggerConfigName
   SHAREPOINTONLINE_CONNECTION_RUNTIME_URL: connectorNamespace.outputs.sharepointConnectionRuntimeUrl
   SHAREPOINT_SITE_URL: sharepointSiteUrl
   TEAMS_CONNECTION_RUNTIME_URL: connectorNamespace.outputs.teamsConnectionRuntimeUrl
@@ -267,6 +274,12 @@ module functionApp 'br/public:avm/res/web/site:0.22.0' = {
       scaleAndConcurrency: {
         instanceMemoryMB: 2048
         maximumInstanceCount: 100
+        alwaysReady: [
+          {
+            name: 'function:OnNewFilePoll'
+            instanceCount: 1
+          }
+        ]
       }
       runtime: {
         name: 'dotnet-isolated'
@@ -305,6 +318,12 @@ output sharepointConnectionName string = connectorNamespace.outputs.sharepointCo
 
 @description('Runtime URL for the SharePoint connection.')
 output sharepointConnectionRuntimeUrl string = connectorNamespace.outputs.sharepointConnectionRuntimeUrl
+
+@description('Namespace-level Poll endpoint used by the Function host.')
+output connectorNamespacePollingEndpoint string = connectorNamespace.outputs.pollingEndpoint
+
+@description('The SharePoint Poll Trigger Config name.')
+output sharepointPollTriggerConfigName string = connectorNamespace.outputs.sharepointPollTriggerConfigName
 
 @description('The name of the created Teams connection on the Connector Namespace.')
 output teamsConnectionName string = connectorNamespace.outputs.teamsConnectionName

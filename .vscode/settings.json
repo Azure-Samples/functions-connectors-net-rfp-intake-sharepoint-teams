@@ -4,5 +4,6 @@
   "azureFunctions.projectRuntime": "~4",
   "azureFunctions.preDeployTask": "publish",
   "azureFunctions.pickProcessTimeout": 90,
+  "azureFunctions.stopFuncTaskPostDebug": true,
   "debug.internalConsoleOptions": "neverOpen"
 }
