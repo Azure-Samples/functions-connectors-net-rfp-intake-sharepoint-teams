@@ -5,11 +5,11 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.38.33.27573",
-      "templateHash": "17828190880733630659"
+      "version": "0.43.8.12551",
+      "templateHash": "13121445055539482197"
     },
     "name": "RFP intake: SharePoint -> Content Understanding -> Teams (.NET)",
-    "description": "Connector Namespace trigger sample that reads an RFP from SharePoint, extracts its layout with Azure Content Understanding, applies deterministic routing rules, and posts an Adaptive Card to Teams. System-key auth on the callback URL (no built-in auth)."
+    "description": "Connector Namespace Poll trigger sample that reads an RFP from SharePoint, extracts its layout with Azure Content Understanding, applies deterministic routing rules, and posts an Adaptive Card to Teams. Managed identity authentication with no public callback."
   },
   "parameters": {
     "environmentName": {
@@ -13568,6 +13568,15 @@
           "teamsConnectionName": {
             "value": "[variables('teamsConnectionName')]"
           },
+          "sharepointSiteUrl": {
+            "value": "[parameters('sharepointSiteUrl')]"
+          },
+          "sharepointLibraryName": {
+            "value": "[parameters('sharepointLibraryName')]"
+          },
+          "sharepointFolderPath": {
+            "value": "[parameters('sharepointFolderPath')]"
+          },
           "functionAppPrincipalId": {
             "value": "[reference('funcUserAssignedIdentity').outputs.principalId.value]"
           },
@@ -13581,8 +13590,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "13851902210590612084"
+              "version": "0.43.8.12551",
+              "templateHash": "7227908841642862721"
             }
           },
           "parameters": {
@@ -13602,10 +13611,20 @@
             "teamsConnectionName": {
               "type": "string"
             },
+            "sharepointSiteUrl": {
+              "type": "string"
+            },
+            "sharepointLibraryName": {
+              "type": "string"
+            },
+            "sharepointFolderPath": {
+              "type": "string",
+              "defaultValue": ""
+            },
             "functionAppPrincipalId": {
               "type": "string",
               "metadata": {
-                "description": "Object (principal) ID of the function app user-assigned MI. Granted access to both connections so it can poll trigger callbacks and call connector actions at runtime."
+                "description": "Object (principal) ID of the function app user-assigned MI. Granted access to both connections so it can receive Poll events and call connector actions at runtime."
               }
             },
             "userPrincipalId": {
@@ -13693,6 +13712,34 @@
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Web/connectorGateways/connections', parameters('name'), parameters('sharepointConnectionName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/connectorGateways/triggerConfigs",
+              "apiVersion": "2026-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), format('{0}-onnewfilepoll', parameters('sharepointConnectionName')))]",
+              "properties": {
+                "connectionDetails": {
+                  "connectionName": "[parameters('sharepointConnectionName')]",
+                  "connectorName": "sharepointonline"
+                },
+                "deliveryMode": "Poll",
+                "description": "When a file is created (properties only) - Poll",
+                "operationName": "GetOnNewFileItems",
+                "parameters": "[concat(createArray(createObject('name', 'dataset', 'value', parameters('sharepointSiteUrl')), createObject('name', 'table', 'value', parameters('sharepointLibraryName'))), if(empty(parameters('sharepointFolderPath')), createArray(), createArray(createObject('name', 'folderPath', 'value', parameters('sharepointFolderPath')))))]",
+                "metadata": {
+                  "recurrenceFrequency": "Minute",
+                  "recurrenceInterval": "5"
+                },
+                "state": "Enabled",
+                "type": "NotSpecified"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/connectorGateways', parameters('name'))]",
+                "[resourceId('Microsoft.Web/connectorGateways/connections', parameters('name'), parameters('sharepointConnectionName'))]",
+                "[resourceId('Microsoft.Web/connectorGateways/connections/accessPolicies', parameters('name'), parameters('sharepointConnectionName'), 'functionapp-msi')]",
+                "[resourceId('Microsoft.Web/connectorGateways/connections/accessPolicies', parameters('name'), parameters('sharepointConnectionName'), 'connector-namespace-msi')]",
+                "[resourceId('Microsoft.Web/connectorGateways/connections/accessPolicies', parameters('name'), parameters('sharepointConnectionName'), 'dev-user')]"
               ]
             },
             {
@@ -13789,6 +13836,20 @@
               },
               "value": "[reference(resourceId('Microsoft.Web/connectorGateways/connections', parameters('name'), parameters('sharepointConnectionName')), '2026-05-01-preview').connectionRuntimeUrl]"
             },
+            "sharepointPollTriggerConfigName": {
+              "type": "string",
+              "metadata": {
+                "description": "The SharePoint Poll Trigger Config name."
+              },
+              "value": "[format('{0}-onnewfilepoll', parameters('sharepointConnectionName'))]"
+            },
+            "pollingEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Namespace-level Poll endpoint derived from the service-generated receive URI."
+              },
+              "value": "[if(endsWith(toLower(substring(reference(resourceId('Microsoft.Web/connectorGateways/triggerConfigs', parameters('name'), format('{0}-onnewfilepoll', parameters('sharepointConnectionName'))), '2026-05-01-preview').pollingEndpoints.receiveUri, 0, indexOf(toLower(reference(resourceId('Microsoft.Web/connectorGateways/triggerConfigs', parameters('name'), format('{0}-onnewfilepoll', parameters('sharepointConnectionName'))), '2026-05-01-preview').pollingEndpoints.receiveUri), '/triggerconfigs/'))), '/api'), join(take(split(substring(reference(resourceId('Microsoft.Web/connectorGateways/triggerConfigs', parameters('name'), format('{0}-onnewfilepoll', parameters('sharepointConnectionName'))), '2026-05-01-preview').pollingEndpoints.receiveUri, 0, indexOf(toLower(reference(resourceId('Microsoft.Web/connectorGateways/triggerConfigs', parameters('name'), format('{0}-onnewfilepoll', parameters('sharepointConnectionName'))), '2026-05-01-preview').pollingEndpoints.receiveUri), '/triggerconfigs/')), '/'), 3), '/'), substring(reference(resourceId('Microsoft.Web/connectorGateways/triggerConfigs', parameters('name'), format('{0}-onnewfilepoll', parameters('sharepointConnectionName'))), '2026-05-01-preview').pollingEndpoints.receiveUri, 0, indexOf(toLower(reference(resourceId('Microsoft.Web/connectorGateways/triggerConfigs', parameters('name'), format('{0}-onnewfilepoll', parameters('sharepointConnectionName'))), '2026-05-01-preview').pollingEndpoints.receiveUri), '/triggerconfigs/')))]"
+            },
             "teamsConnectionName": {
               "type": "string",
               "metadata": {
@@ -13844,8 +13905,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "14776792256173973927"
+              "version": "0.43.8.12551",
+              "templateHash": "14957872672780666861"
             }
           },
           "parameters": {
@@ -13899,7 +13960,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', parameters('name'))]",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]",
               "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), parameters('functionAppPrincipalId'), variables('cognitiveServicesUserRoleId'))]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cognitiveServicesUserRoleId'))]",
@@ -13914,7 +13975,7 @@
               "condition": "[not(empty(parameters('userPrincipalId')))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', parameters('name'))]",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]",
               "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), parameters('userPrincipalId'), variables('cognitiveServicesUserRoleId'))]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cognitiveServicesUserRoleId'))]",
@@ -14016,6 +14077,10 @@
                   "APPLICATIONINSIGHTS_AUTHENTICATION_STRING": "[format('ClientId={0};Authorization=AAD', reference('funcUserAssignedIdentity').outputs.clientId.value)]",
                   "APPLICATIONINSIGHTS_CONNECTION_STRING": "[reference('monitoring').outputs.connectionString.value]",
                   "AZURE_CLIENT_ID": "[reference('funcUserAssignedIdentity').outputs.clientId.value]",
+                  "ConnectorNamespace__pollingEndpoint": "[reference('connectorNamespace').outputs.pollingEndpoint.value]",
+                  "ConnectorNamespace__credential": "managedidentity",
+                  "ConnectorNamespace__clientId": "[reference('funcUserAssignedIdentity').outputs.clientId.value]",
+                  "OnNewFilePollTriggerConfigName": "[reference('connectorNamespace').outputs.sharepointPollTriggerConfigName.value]",
                   "SHAREPOINTONLINE_CONNECTION_RUNTIME_URL": "[reference('connectorNamespace').outputs.sharepointConnectionRuntimeUrl.value]",
                   "SHAREPOINT_SITE_URL": "[parameters('sharepointSiteUrl')]",
                   "TEAMS_CONNECTION_RUNTIME_URL": "[reference('connectorNamespace').outputs.teamsConnectionRuntimeUrl.value]",
@@ -26749,6 +26814,20 @@
         "description": "Runtime URL for the SharePoint connection."
       },
       "value": "[reference('connectorNamespace').outputs.sharepointConnectionRuntimeUrl.value]"
+    },
+    "connectorNamespacePollingEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Namespace-level Poll endpoint used by the Function host."
+      },
+      "value": "[reference('connectorNamespace').outputs.pollingEndpoint.value]"
+    },
+    "sharepointPollTriggerConfigName": {
+      "type": "string",
+      "metadata": {
+        "description": "The SharePoint Poll Trigger Config name."
+      },
+      "value": "[reference('connectorNamespace').outputs.sharepointPollTriggerConfigName.value]"
     },
     "teamsConnectionName": {
       "type": "string",

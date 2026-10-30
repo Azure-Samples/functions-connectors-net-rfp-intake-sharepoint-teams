@@ -39,21 +39,13 @@ public class RfpFunctions
         _documentAnalyzer = documentAnalyzer;
     }
 
-    [Function("OnNewFile")]
-    public async Task OnNewFile(
-        [ConnectorTrigger] SharePointOnlineOnNewFileItemsTriggerPayload payload,
-        CancellationToken cancellationToken)
-    {
-        await ProcessNewFilesAsync(payload, cancellationToken);
-    }
-
     [Function("OnNewFilePoll")]
     public async Task OnNewFilePoll(
         [ConnectorTrigger(
             DeliveryMode = ConnectorTriggerDeliveryMode.Poll,
             Connection = "ConnectorNamespace",
             TriggerConfigName = "%OnNewFilePollTriggerConfigName%",
-            Concurrency = 1)]
+            MaxConcurrentCalls = 1)]
         ConnectorEvent<SharePointOnlineOnNewFileItemsTriggerPayload> connectorEvent,
         CancellationToken cancellationToken)
     {
@@ -71,7 +63,7 @@ public class RfpFunctions
         var items = payload.Body?.Value;
         if (items is null || items.Count == 0)
         {
-            _logger.LogInformation("OnNewFile fired with no items.");
+            _logger.LogInformation("OnNewFilePoll fired with no items.");
             return;
         }
 

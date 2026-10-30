@@ -3,7 +3,10 @@ param location string
 param tags object = {}
 param sharepointConnectionName string
 param teamsConnectionName string
-@description('Object (principal) ID of the function app user-assigned MI. Granted access to both connections so it can poll trigger callbacks and call connector actions at runtime.')
+param sharepointSiteUrl string
+param sharepointLibraryName string
+param sharepointFolderPath string = ''
+@description('Object (principal) ID of the function app user-assigned MI. Granted access to both connections so it can receive Poll events and call connector actions at runtime.')
 param functionAppPrincipalId string
 @description('Optional. AAD object ID of a user (typically the deployer) to also grant access to the connections, so the same code can be debugged locally with `az login` credentials.')
 param userPrincipalId string = ''
@@ -71,6 +74,53 @@ resource sharepointUserAccessPolicy 'Microsoft.Web/connectorGateways/connections
   }
 }
 
+resource sharepointPollTrigger 'Microsoft.Web/connectorGateways/triggerConfigs@2026-05-01-preview' = {
+  parent: connectorNamespace
+  name: '${sharepointConnectionName}-onnewfilepoll'
+  properties: {
+    connectionDetails: {
+      connectionName: sharepointConnection.name
+      connectorName: 'sharepointonline'
+    }
+    deliveryMode: 'Poll'
+    description: 'When a file is created (properties only) - Poll'
+    operationName: 'GetOnNewFileItems'
+    parameters: concat([
+      {
+        name: 'dataset'
+        value: sharepointSiteUrl
+      }
+      {
+        name: 'table'
+        value: sharepointLibraryName
+      }
+    ], empty(sharepointFolderPath) ? [] : [
+      {
+        name: 'folderPath'
+        value: sharepointFolderPath
+      }
+    ])
+    metadata: {
+      recurrenceFrequency: 'Minute'
+      recurrenceInterval: '5'
+    }
+    state: 'Enabled'
+    type: 'NotSpecified'
+  }
+  dependsOn: [
+    sharepointFunctionAppAccessPolicy
+    sharepointNamespaceAccessPolicy
+    sharepointUserAccessPolicy
+  ]
+}
+
+var pollingReceiveUri = sharepointPollTrigger.properties.pollingEndpoints.receiveUri
+var pollingBaseUri = substring(pollingReceiveUri, 0, indexOf(toLower(pollingReceiveUri), '/triggerconfigs/'))
+// Stable DNS uses the authority alone; legacy routing retains /api/connectorGateways/<id>.
+var pollingEndpointBase = endsWith(toLower(pollingBaseUri), '/api')
+  ? join(take(split(pollingBaseUri, '/'), 3), '/')
+  : pollingBaseUri
+
 // ---------------------------------------------------------------------------
 // Teams connection (Post card in a chat or channel action)
 // ---------------------------------------------------------------------------
@@ -135,6 +185,12 @@ output sharepointConnectionName string = sharepointConnection.name
 
 @description('Runtime URL for the SharePoint connection.')
 output sharepointConnectionRuntimeUrl string = sharepointConnection.properties.connectionRuntimeUrl
+
+@description('The SharePoint Poll Trigger Config name.')
+output sharepointPollTriggerConfigName string = sharepointPollTrigger.name
+
+@description('Namespace-level Poll endpoint derived from the service-generated receive URI.')
+output pollingEndpoint string = pollingEndpointBase
 
 @description('The name of the Teams connection on the namespace.')
 output teamsConnectionName string = teamsConnection.name

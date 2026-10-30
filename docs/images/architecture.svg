@@ -44,7 +44,7 @@
 
   <rect class="node" x="585" y="155" width="165" height="130" rx="16"/>
   <image x="640" y="172" width="56" height="56" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOCAxOCIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSItMTc1Ljk5MyIgeTE9Ii0zNDMuNzIzIiB4Mj0iLTE3NS45OTMiIHkyPSItMzU5LjIzMiIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgxLjE1NiAwIDAgMS4wMjkgMjEyLjU3MyAzNzAuNTQ4KSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2ZlYTExYiIvPjxzdG9wIG9mZnNldD0iLjI4NCIgc3RvcC1jb2xvcj0iI2ZlYTUxYSIvPjxzdG9wIG9mZnNldD0iLjU0NyIgc3RvcC1jb2xvcj0iI2ZlYjAxOCIvPjxzdG9wIG9mZnNldD0iLjgiIHN0b3AtY29sb3I9IiNmZmMzMTQiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZmQ3MGYiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBkPSJNNS41NCAxMy4xMDVsLS41ODYuNTg4YS4yNjcuMjY3IDAgMDEtLjM3NyAwTC4yMjMgOS4zNTNhLjUzMy41MzMgMCAwMTAtLjc1NWwuNTg4LS41OSA0LjczMiA0LjcxOGEuMjY3LjI2NyAwIDAxMCAuMzc4eiIgZmlsbD0iIzUwZTZmZiIvPjxwYXRoIGQ9Ik00Ljg2MyA0LjMwNWwuNTkuNTg4YS4yNjcuMjY3IDAgMDEwIC4zNzhMLjgwNiA5LjkzMmwtLjU5LS41ODlhLjUzMy41MzMgMCAwMS0uMDAxLS43NTRsNC4yNzMtNC4yODVhLjI2Ny4yNjcgMCAwMS4zNzYgMHoiIGZpbGw9IiMxNDkwZGYiLz48cGF0aCBkPSJNMTcuMTkgOC4wMTJsLjU4OC41OWEuNTMzLjUzMyAwIDAxLS4wMDEuNzU0bC00LjM1NCA0LjM0YS4yNjcuMjY3IDAgMDEtLjM3NyAwbC0uNTg2LS41ODdhLjI2Ny4yNjcgMCAwMTAtLjM3N2w0LjczMi00LjcxOHoiIGZpbGw9IiM1MGU2ZmYiLz48cGF0aCBkPSJNMTcuNzgyIDkuMzRsLS41OS41ODktNC42NDgtNC42NjJhLjI2Ny4yNjcgMCAwMTAtLjM3N2wuNTktLjU4OGEuMjY3LjI2NyAwIDAxLjM3OCAwbDQuMjczIDQuMjg2YS41MzMuNTMzIDAgMDEwIC43NTN6IiBmaWxsPSIjMTQ5MGRmIi8+PHBhdGggZD0iTTguNDU5IDkuOUg0Ljg3YS4xOTMuMTkzIDAgMDEtLjItLjE4MS4xNjYuMTY2IDAgMDEuMDE4LS4wNzVMOC45OTEgMS4xM2EuMjA2LjIwNiAwIDAxLjE4Ni0uMTA2aDQuMjQ1YS4xOTMuMTkzIDAgMDEuMi4xODEuMTY1LjE2NSAwIDAxLS4wMzUuMUw4LjUzNCA3Ljk2Nmg0LjkyOGEuMTkzLjE5MyAwIDAxLjIuMTgxLjE3Ni4xNzYgMCAwMS0uMDUyLjEyMmwtOC4xODkgOC41MTljLS4wNzcuMDQ2LS42MjQuNS0uMzU2LS4xODl6IiBmaWxsPSJ1cmwoI2EpIi8+PC9zdmc+"/>
-  <text class="title" x="668" y="250" text-anchor="middle">OnNewFile</text>
+  <text class="title" x="668" y="250" text-anchor="middle">OnNewFilePoll</text>
   <text class="subtitle" x="668" y="270" text-anchor="middle">function</text>
 
   <rect class="node" x="850" y="55" width="200" height="140" rx="16"/>
@@ -61,7 +61,7 @@
   <text class="edge-label" x="232" y="151" text-anchor="middle">new file</text>
 
   <path class="edge" d="M470 152 H525 Q540 152 550 170 L585 205"/>
-  <text class="edge-label" x="527" y="142" text-anchor="middle">trigger</text>
+  <text class="edge-label" x="527" y="142" text-anchor="middle">Poll event</text>
 
   <path class="edge" d="M750 190 C800 190 805 125 850 125"/>
   <text class="edge-label" x="804" y="138" text-anchor="middle"><tspan x="804">RFP Text +</tspan><tspan x="804" dy="16">System Prompt</tspan></text>

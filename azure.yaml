@@ -18,14 +18,3 @@ hooks:
       run: ./infra/scripts/postprovision.sh
       interactive: true
       continueOnError: false
-  postdeploy:
-    windows:
-      shell: pwsh
-      run: ./infra/scripts/postdeploy.ps1
-      interactive: true
-      continueOnError: false
-    posix:
-      shell: sh
-      run: ./infra/scripts/postdeploy.sh
-      interactive: true
-      continueOnError: false

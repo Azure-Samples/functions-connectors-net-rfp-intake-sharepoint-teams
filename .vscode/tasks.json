@@ -58,7 +58,7 @@
     {
       "label": "func: host start",
       "type": "shell",
-      "command": "dotnet build && cd bin${pathSeparator}Debug${pathSeparator}net10.0 && func host start --dotnet-isolated-debug --enable-json-output --enableAuth",
+      "command": "dotnet build && cd bin${pathSeparator}Debug${pathSeparator}net10.0 && func host start --dotnet-isolated-debug --enable-json-output",
       "options": {
         "cwd": "${workspaceFolder}"
       },

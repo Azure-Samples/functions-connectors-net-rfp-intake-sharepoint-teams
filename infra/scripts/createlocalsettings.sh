@@ -27,10 +27,13 @@ teams_runtime_url=$(printf '%s' "$outputs" | jq -r '.teamsConnectionRuntimeUrl /
 teams_team_id=$(printf '%s' "$outputs" | jq -r '.TEAMS_TEAM_ID // empty')
 teams_channel_id=$(printf '%s' "$outputs" | jq -r '.TEAMS_CHANNEL_ID // empty')
 content_understanding_endpoint=$(printf '%s' "$outputs" | jq -r '.contentUnderstandingEndpoint // empty')
+polling_endpoint=$(printf '%s' "$outputs" | jq -r '.connectorNamespacePollingEndpoint // empty')
+poll_trigger_config_name=$(printf '%s' "$outputs" | jq -r '.sharepointPollTriggerConfigName // empty')
 
 if [ -z "$sharepoint_runtime_url" ] || [ -z "$sharepoint_site_url" ] ||
    [ -z "$teams_runtime_url" ] || [ -z "$teams_team_id" ] ||
-   [ -z "$teams_channel_id" ] || [ -z "$content_understanding_endpoint" ]; then
+   [ -z "$teams_channel_id" ] || [ -z "$content_understanding_endpoint" ] ||
+   [ -z "$polling_endpoint" ] || [ -z "$poll_trigger_config_name" ]; then
     echo "Required azd outputs are missing. Run 'azd provision' first." >&2
     exit 1
 fi
@@ -44,6 +47,8 @@ jq -n \
     --arg teams_team_id "$teams_team_id" \
     --arg teams_channel_id "$teams_channel_id" \
     --arg content_understanding_endpoint "$content_understanding_endpoint" \
+    --arg polling_endpoint "$polling_endpoint" \
+    --arg poll_trigger_config_name "$poll_trigger_config_name" \
     '
       {
         IsEncrypted: false,
@@ -51,6 +56,8 @@ jq -n \
           AzureWebJobsStorage: "UseDevelopmentStorage=true",
           FUNCTIONS_WORKER_RUNTIME: "dotnet-isolated",
           AZURE_CLIENT_ID: "",
+          ConnectorNamespace__pollingEndpoint: $polling_endpoint,
+          OnNewFilePollTriggerConfigName: $poll_trigger_config_name,
           SHAREPOINTONLINE_CONNECTION_RUNTIME_URL: $sharepoint_runtime_url,
           SHAREPOINT_SITE_URL: $sharepoint_site_url,
           TEAMS_CONNECTION_RUNTIME_URL: $teams_runtime_url,
